@@ -27,11 +27,12 @@ Proyecto Integrador interdisciplinar desarrollado para la Facultad de Economía,
 Asegurarse de tener el servicio local de MongoDB iniciado en el puerto 27017.
 
 #### 2. Servidor Backend
-```bash
+
 cd backend
 npm install
 node semilla.js   # Ejecutar una sola vez para poblar roles y usuarios
 node index.js
+
 El servidor backend escuchará en http://localhost:4000.
 3. Cliente Frontend
 
@@ -63,9 +64,3 @@ Abre la terminal en la raíz del proyecto y ejecuta estos comandos:
 
 ```bash
 git status
-
-(Verifica que solo aparezcan modificados o creados backend, frontend, .gitignore y README.md, y ninguna carpeta node_modules).
-
-git add .
-git commit -m "feat(auth): implementacion completa de login JWT, RBAC y logout fullstack"
-git push -u origin feature-rene-auth

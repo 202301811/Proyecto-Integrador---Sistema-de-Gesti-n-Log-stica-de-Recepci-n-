@@ -48,19 +48,3 @@ Credenciales de Prueba (Contraseña general: Password123!)
     Operador: operador@feen.ujmd.edu.sv
 
 
----
-
-### Paso 3: Prueba de los 3 Roles
-Antes de hacer commit, haz una prueba rápida en el navegador para confirmar que los 3 roles creados por el script funcionan:
-1. Entra con `coordinador@feen.ujmd.edu.sv` / `Password123!` -> debe llevar a `/dashboard/coordinador` y mostrar **COORDINADOR**.
-2. Dale a Logout.
-3. Entra con `operador@feen.ujmd.edu.sv` / `Password123!` -> debe llevar a `/dashboard/operador` y mostrar **OPERADOR**.
-4. Dale a Logout.
-
----
-
-### Paso 4: Enviar tu rama personal a GitHub
-Abre la terminal en la raíz del proyecto y ejecuta estos comandos:
-
-```bash
-git status

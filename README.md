@@ -2,65 +2,45 @@
 
 Proyecto Integrador interdisciplinar desarrollado para la Facultad de Economía, Empresa y Negocios FEEN.
 
-## Sprint 0: Módulo de Autenticación y Control de Acceso (RBAC)
+## Módulos Implementados
 
-### Arquitectura Técnica
-- **Frontend:** Next.js (App Router) estilizado con clases nativas de Bootstrap.
-- **Backend:** API REST en Express.js sobre Node.js.
-- **Base de Datos:** MongoDB local gestionada mediante Mongoose.
-- **Seguridad:** Hash asíncrono de contraseñas con bcrypt y generación de tokens de sesión con JSON Web Token (JWT).
+### Sprint 0: Módulo de Autenticación y Control de Acceso (RBAC)
+* **Seguridad:** Hash asíncrono de contraseñas con `bcrypt` y generación de tokens JWT con expiración de 24 horas.
+* **Control de Acceso:** Validación de roles (Administrador, Coordinador, Operador) y redirección dinámica en el frontend.
+* **Persistencia:** Almacenamiento seguro del token en `localStorage` y flujo de cierre de sesión seguro.
 
-### Especificaciones del Flujo de Autenticación
-1. **Formulario Reactivo y Controlado:** Captura de credenciales institucionales mediante estados en React.
-2. **Endpoint de Ingreso:** `POST /api/auth/login` valida usuario, estado activo y contraseña. Retorna un JWT con tiempo de expiración de 24 horas y payload no sensible (id, correo, nombres y rol).
-3. **Persistencia en Cliente:** El token se almacena en el `localStorage` del navegador.
-4. **Validación de Roles y Redirección Dinámica:** El payload del JWT se decodifica en el cliente con `jwt-decode`, redirigiendo dinámicamente a la ruta correspondiente:
-   - `/dashboard/administrador`
-   - `/dashboard/coordinador`
-   - `/dashboard/operador`
-5. **Vista Post-Login:** Página inicial que presenta únicamente el rol autenticado validado contra el token.
-6. **Cierre de Sesión Seguro (Logout):** Remueve el JWT de `localStorage` y redirige al inicio bloqueando la navegación hacia atrás en el historial.
+### Sprint 1: Módulo de Ventanas Horarias y Proveedores (Arquitectura MVC)
+* **Registro de Proveedores:** Restricción de categorías y validación estricta de datos desde el backend usando `express-validator`.
+* **Integridad Referencial (RN-01):** Prevención de pedidos huérfanos validando la existencia del proveedor en la base de datos antes de programar una cita.
+* **Algoritmo de Ventanas Horarias (RN-02):** Sistema de detección de solapamiento. Si una cita choca con otra o está fuera del horario operativo (8:00 AM - 5:00 PM), el sistema bloquea la transacción y sugiere automáticamente **3 ventanas alternativas disponibles**.
+* **Protección de Rutas:** Formularios de programación de uso exclusivo para el rol de **Coordinador**.
 
-### Instrucciones de Ejecución Local
+## ⚙️ Instrucciones de Ejecución Local
 
-#### 1. Base de datos
-Asegurarse de tener el servicio local de MongoDB iniciado en el puerto 27017.
+El orden correcto para iniciar el ecosistema es: Base de Datos -> Servidor Backend -> Cliente Frontend.
 
-#### 2. Servidor Backend
+### 1. Base de Datos
+Asegúrate de tener el servicio de MongoDB iniciado en tu equipo local en el puerto `27017` (puedes verificarlo abriendo MongoDB Compass).
 
+### 2. Servidor Backend
+Abre una terminal en la raíz del proyecto y ejecuta los siguientes comandos para instalar dependencias (incluyendo express-validator, mongoose, etc.) y levantar la API:
+```bash
 cd backend
 npm install
-node semilla.js   # Ejecutar una sola vez para poblar roles y usuarios
-node index.js
+node semilla.js  # Ejecutar una sola vez para poblar roles y usuarios por defecto
+npm run dev      # (O utiliza `node index.js` si no tienes configurado nodemon)
+El servidor backend escuchará en http://localhost:4000
 
-El servidor backend escuchará en http://localhost:4000.
-3. Cliente Frontend
 
+### 2. Servidor Frontend
 cd frontend
 npm install
 npm run dev
-
-El aplicativo frontend estará disponible en http://localhost:3000.
-Credenciales de Prueba (Contraseña general: Password123!)
-
-    Administrador: admin@feen.ujmd.edu.sv
-    Coordinador: coordinador@feen.ujmd.edu.sv
-    Operador: operador@feen.ujmd.edu.sv
+El aplicativo frontend estará disponible en http://localhost:3000
 
 
----
-
-### Paso 3: Prueba de los 3 Roles
-Antes de hacer commit, haz una prueba rápida en el navegador para confirmar que los 3 roles creados por el script funcionan:
-1. Entra con `coordinador@feen.ujmd.edu.sv` / `Password123!` -> debe llevar a `/dashboard/coordinador` y mostrar **COORDINADOR**.
-2. Dale a Logout.
-3. Entra con `operador@feen.ujmd.edu.sv` / `Password123!` -> debe llevar a `/dashboard/operador` y mostrar **OPERADOR**.
-4. Dale a Logout.
-
----
-
-### Paso 4: Enviar tu rama personal a GitHub
-Abre la terminal en la raíz del proyecto y ejecuta estos comandos:
-
-```bash
-git status
+### 4. Credenciales de Prueba
+Contraseña general para todos los usuarios: Password123!
+Administrador: admin@feen.ujmd.edu.sv
+Coordinador: coordinador@feen.ujmd.edu.sv # Utilizar este rol para probar el registro de proveedores y programación de citas
+Operador: operador@feen.ujmd.edu.sv

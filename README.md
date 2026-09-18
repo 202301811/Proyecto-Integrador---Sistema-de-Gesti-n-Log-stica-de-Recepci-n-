@@ -23,26 +23,29 @@ El orden correcto para iniciar el ecosistema es: Base de Datos -> Servidor Backe
 Asegúrate de tener el servicio de MongoDB iniciado en tu equipo local en el puerto `27017` (puedes verificarlo abriendo MongoDB Compass).
 
 ### 2. Servidor Backend
-Abre una terminal en la raíz del proyecto y ejecuta los siguientes comandos para instalar dependencias (incluyendo express-validator, mongoose, etc.) y levantar la API:
+Abre una terminal en la raíz del proyecto y ejecuta los siguientes comandos para instalar dependencias y levantar la API:
 
 ```bash
 cd backend
 npm install
 node semilla.js  # Ejecutar una sola vez para poblar roles y usuarios por defecto
 npm run dev      # (O utiliza `node index.js` si no tienes configurado nodemon)
-El servidor backend escuchará en http://localhost:4000.
+```
+*El servidor backend escuchará en http://localhost:4000.*
 
-3. Servidor Frontend
-Abre una segunda terminal paralela en la raíz del proyecto y ejecuta:
+### 3. Servidor Frontend
+Abre una **segunda terminal** paralela en la raíz del proyecto y ejecuta:
 
-Bash
+```bash
 cd frontend
 npm install
 npm run dev
-El aplicativo frontend estará disponible en http://localhost:3000.
+```
+*El aplicativo frontend estará disponible en http://localhost:3000.*
 
-4. Credenciales de Prueba
-Contraseña general para todos los usuarios: Password123!
-Administrador: admin@feen.ujmd.edu.sv
-Coordinador: coordinador@feen.ujmd.edu.sv (Utilizar este rol para probar el registro de proveedores y programación de citas)
-Operador: operador@feen.ujmd.edu.sv
+### 4. Credenciales de Prueba
+**Contraseña general para todos los usuarios:** `Password123!`
+
+* **Administrador:** `admin@feen.ujmd.edu.sv`
+* **Coordinador:** `coordinador@feen.ujmd.edu.sv` *(Utilizar este rol para probar el registro de proveedores y programación de citas)*
+* **Operador:** `operador@feen.ujmd.edu.sv`

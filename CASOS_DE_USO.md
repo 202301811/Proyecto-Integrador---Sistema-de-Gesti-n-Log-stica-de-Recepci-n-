@@ -1,57 +1,54 @@
-# Diagrama General de Casos de Uso (UML) - SumaControl MVP
-
 ```mermaid
 flowchart LR
-    %% Actores Humanos
-    subgraph ACTORES_HUMANOS [Actores del Negocio]
-        Coordinador["fa:fa-user Coordinador Logístico"]
-        Operador["fa:fa-user Operador de Recepción"]
-        Admin["fa:fa-user Administrador del Sistema"]
+
+    subgraph Actores [Actores del Sistema]
+        Coord[Coordinador Logistico]
+        Oper[Operador de Recepcion]
+        Admin[Administrador del Sistema]
     end
 
-    %% Límite del Sistema
-    subgraph SYSTEM_BOUNDARY ["SISTEMA DE GESTIÓN LOGÍSTICA SUMACONTROL (MVP)"]
-        CU01(["CU-01: Programar Cita de Abastecimiento"])
-        CU01_1(["CU-01.1: Validar Disponibilidad de Horario"])
-        CU01_2(["CU-01.2: Reprogramar Cita Existente"])
+    subgraph Sistema [SISTEMA SUMACONTROL MVP]
+        CU01([CU-01: Programar Cita])
+        CU01_1([CU-01.1: Validar Disponibilidad])
+        CU01_2([CU-01.2: Reprogramar Cita])
 
-        CU02(["CU-02: Registrar Arribo en Garita"])
-        CU02_1(["CU-02.1: Clasificar Puntualidad Automática"])
-        CU02_2(["CU-02.2: Marcar Pedido como Ausente"])
+        CU02([CU-02: Registrar Arribo en Garita])
+        CU02_1([CU-02.1: Clasificar Puntualidad])
+        CU02_2([CU-02.2: Marcar como Ausente])
 
-        CU03(["CU-03: Asignar Bahía de Desembarque"])
-        CU03_1(["CU-03.1: Validar Restricción de Carga (G1-G4 vs G5)"])
-        CU03_2(["CU-03.2: Encolar en Espera Priorizada"])
+        CU03([CU-03: Asignar Bahia])
+        CU03_1([CU-03.1: Validar Carga G1-G4 vs G5])
+        CU03_2([CU-03.2: Encolar en Espera])
 
-        CU04(["CU-04: Configurar Tolerancia y Parámetros"])
-        CU05(["CU-05: Reordenar Cola por Aging"])
-        CU06(["CU-06: Monitorear Bahías y Liberar Gateway"])
+        CU04([CU-04: Configurar Parametros])
+        CU05([CU-05: Reordenar Cola por Aging])
+        CU06([CU-06: Monitorear Dashboard])
     end
 
-    %% Actor de Sistema (Algoritmo)
-    subgraph ACTOR_SISTEMA [Servicio Algorítmico]
-        MotorEDA["fa:fa-cogs Motor EDA 0 / Cola Prioridad"]
+    subgraph Algoritmo [Servicio Algoritmico]
+        MotorEDA[Motor EDA 0 - Cola Prioridad]
     end
 
-    %% Relaciones de CU-01
-    Coordinador --> CU01
-    CU01 -.->|"<<include>>"| CU01_1
-    CU01_2 -.->|"<<extend>>"| CU01
+    %% Relaciones Include (Obligatorias)
+    CU01 -.->|«include»| CU01_1
+    CU02 -.->|«include»| CU02_1
+    CU03 -.->|«include»| CU03_1
 
-    %% Relaciones de CU-02
-    Operador --> CU02
-    CU02 -.->|"<<include>>"| CU02_1
-    CU02_2 -.->|"<<extend>>"| CU02
+    %% Relaciones Extend (Excepciones / Flujos Opcionales)
+    CU01_2 -.->|«extend»| CU01
+    CU02_2 -.->|«extend»| CU02
+    CU03_2 -.->|«extend»| CU03
 
-    %% Relaciones de CU-03
-    Operador --> CU03
-    MotorEDA --> CU03
-    CU03 -.->|"<<include>>"| CU03_1
-    CU03_2 -.->|"<<extend>>"| CU03
+    %% Conexiones de Actores a Casos de Uso
+    Coord --> CU01
+    Coord --> CU06
 
-    %% Relaciones de CU-04, 05, 06
+    Oper --> CU02
+    Oper --> CU03
+    Oper --> CU06
+
     Admin --> CU04
+
+    MotorEDA --> CU03_2
     MotorEDA --> CU05
-    Coordinador --> CU06
-    Operador --> CU06
 ```

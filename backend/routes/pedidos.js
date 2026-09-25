@@ -11,20 +11,32 @@ const validarCampos = (req, res, next) => {
     next();
 };
 
-// POST /api/pedidos[cite: 3]
+// GET /api/pedidos - Obtener todos los activos
+router.get('/', pedidoController.obtenerPedidos);
+
+// POST /api/pedidos - Crear nueva cita
 router.post('/',
     [
-        body('numeroPedido', 'El número de pedido es obligatorio').notEmpty().trim(), // Campo obligatorio[cite: 3]
+        body('numeroPedido', 'El número de pedido es obligatorio').notEmpty().trim(),
         body('proveedorId', 'Debe ser un ID válido de MongoDB').isMongoId(),
-        body('tipoProducto', 'El tipo de producto debe ser "construcción" o "general"').isIn(['construcción', 'general']), // Lista cerrada[cite: 3]
+        body('tipoProducto', 'El tipo de producto debe ser "construcción" o "general"').isIn(['construcción', 'general']),
         body('fechaHoraProgramada', 'La fecha y hora programada es obligatoria (formato ISO8601)').isISO8601(),
-        body('duracionEstimadaMinutos', 'La duración debe ser un número mayor a cero').isInt({ gt: 0 }), // Mayor a cero[cite: 3]
+        body('duracionEstimadaMinutos', 'La duración debe ser un número mayor a cero').isInt({ gt: 0 }),
         validarCampos
     ],
     pedidoController.crearPedido
 );
 
-// GET /api/pedidos[cite: 3]
-router.get('/', pedidoController.obtenerPedidos);
+// PUT /api/pedidos/:id - Reprogramar cita
+router.put('/:id',
+    [
+        body('fechaHoraProgramada', 'La fecha y hora programada es obligatoria (formato ISO8601)').optional().isISO8601(),
+        validarCampos
+    ],
+    pedidoController.reprogramarPedido
+);
+
+// DELETE /api/pedidos/:id - Cancelar cita (Soft Delete)
+router.delete('/:id', pedidoController.cancelarPedido);
 
 module.exports = router;

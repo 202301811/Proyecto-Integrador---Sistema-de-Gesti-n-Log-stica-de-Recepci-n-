@@ -22,6 +22,13 @@ Proyecto Integrador interdisciplinar desarrollado para la Facultad de Economía,
 * **Motor de Clasificación Temporal:** Endpoint POST /api/llegadas que captura la hora del servidor y clasifica automáticamente el estado logístico (A TIEMPO, ANTICIPADO, TARDÍO, AUSENTE).
 * **Soft Delete (Borrado Lógico):** Cumplimiento estricto de la política de cero borrado físico. Todas las operaciones de inactivación actualizan la bandera activo: false, filtrando las lecturas GET para mostrar únicamente registros vigentes.
 
+### Sprint 3: Gestión de Gateways, Exclusividad de Carga y Transacciones (HU-03)
+* **Autogeneración Correlativa:** Bloqueo de digitación manual del ID de pedido. Generación automática y blindada de códigos correlativos en formato estricto `PED-EQUI[num]-[00000000X]` basado en un parámetro de base de datos configurable dinámicamente.
+* **Control Físico y Exclusividad (RN-07 y RN-08):** Gestión de 5 gateways de descarga en base de datos. Implementación de reglas de exclusividad operativas: GW 1 al 4 para carga 'general' y GW 5 exclusivo para 'construcción'.
+* **Validaciones de Infraestructura (RN-GW-01 y RN-GW-02):** Restricciones lógicas de negocio que prohíben cambiar a estado 'FUERA DE SERVICIO' o alterar el tipo de carga de una bahía mientras esta se encuentra atendiendo una operación (estado 'OCUPADO').
+* **Motor Transaccional de Descargas:** Endpoints de inicialización y finalización de descargas (`POST /api/descargas/...`) que actualizan en cadena (cadena de responsabilidades) los estados de los pedidos (`EN COLA`, `DESCARGANDO`, `FINALIZADO`) y la disponibilidad en tiempo real de la bahía.
+* **UI en Tiempo Real:** Tablero interactivo (Dashboard principal) con representación visual semántica por código de colores (Verde = Libre, Rojo = Ocupado, Gris = Fuera de Servicio) para monitoreo logístico.
+
 ---
 
 ## ⚙️ Instrucciones de Ejecución Local

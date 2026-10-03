@@ -1,36 +1,33 @@
 const Pedido = require('../models/Pedido');
 const Proveedor = require('../models/Proveedor');
+const Parametro = require('../models/Parametro');
 
-// Definición del horario logístico actualizado (07:00 AM a 5:00 PM)
 const HORA_APERTURA = 7;
 const HORA_CIERRE = 17;
 
-// POST: Crear Pedido
+// POST: Crear Pedido con Autogeneración
 exports.crearPedido = async (req, res) => {
     try {
-        const { numeroPedido, proveedorId, tipoProducto, fechaHoraProgramada, duracionEstimadaMinutos } = req.body;
+        // Nota: numeroPedido ya no viene del frontend
+        const { proveedorId, tipoProducto, fechaHoraProgramada, duracionEstimadaMinutos } = req.body;
         const nombreUsuario = req.usuario?.nombre || 'Usuario Sistema';
 
-        // RN-01: Integridad referencial (El proveedor debe existir y estar activo)
+        // 1. Integridad referencial
         const proveedorExiste = await Proveedor.findOne({ _id: proveedorId, activo: true });
         if (!proveedorExiste) {
-            return res.status(404).json({ 
-                mensaje: 'Error (RN-01): El proveedorId enviado no corresponde a un proveedor registrado o activo.' 
-            });
+            return res.status(404).json({ mensaje: 'Error (RN-01): Proveedor no válido.' });
         }
 
         const inicioVentana = new Date(fechaHoraProgramada);
         const finVentana = new Date(inicioVentana.getTime() + duracionEstimadaMinutos * 60000);
 
-        // Validar horario operativo (07:00 a 17:00 L-S)
+        // 2. Validar horario operativo
         const diaSemana = inicioVentana.getDay();
         if (diaSemana === 0 || inicioVentana.getHours() < HORA_APERTURA || finVentana.getHours() > HORA_CIERRE) {
-            return res.status(400).json({ 
-                mensaje: `Fuera de horario operativo. El centro logístico atiende de ${HORA_APERTURA}:00 a ${HORA_CIERRE}:00, Lunes a Sábado.` 
-            });
+            return res.status(400).json({ mensaje: 'Fuera de horario operativo (07:00 a 17:00 L-S).' });
         }
 
-        // RN-02: Detección de solapamiento
+        // 3. RN-02: Detección de solapamiento (Lógica existente)
         const choque = await Pedido.findOne({
             $and: [
                 { inicioVentana: { $lt: finVentana } },
@@ -41,17 +38,15 @@ exports.crearPedido = async (req, res) => {
         });
 
         if (choque) {
-            // Algoritmo de alternativas (Generar 3 opciones)
+            // Algoritmo de 3 alternativas
             let alternativas = [];
             let posibleInicio = new Date(inicioVentana);
-
             while (alternativas.length < 3) {
-                posibleInicio = new Date(posibleInicio.getTime() + 60 * 60000); 
+                posibleInicio = new Date(posibleInicio.getTime() + 60 * 60000);
                 const posibleFin = new Date(posibleInicio.getTime() + duracionEstimadaMinutos * 60000);
-
                 const diaPosible = posibleInicio.getDay();
                 if (diaPosible !== 0 && posibleInicio.getHours() >= HORA_APERTURA && posibleFin.getHours() <= HORA_CIERRE) {
-                    const cruceAlternativa = await Pedido.findOne({
+                    const cruce = await Pedido.findOne({
                         $and: [
                             { inicioVentana: { $lt: posibleFin } },
                             { finVentana: { $gt: posibleInicio } },
@@ -59,28 +54,32 @@ exports.crearPedido = async (req, res) => {
                             { activo: true }
                         ]
                     });
-
-                    if (!cruceAlternativa) {
-                        alternativas.push({
-                            fechaHoraSugerida: posibleInicio,
-                            finVentanaSugerida: posibleFin
-                        });
-                    }
+                    if (!cruce) alternativas.push({ fechaHoraSugerida: posibleInicio, finVentanaSugerida: posibleFin });
                 } else if (posibleInicio.getHours() > HORA_CIERRE || diaPosible === 0) {
-                     // Si se acaba el día o es domingo, saltar al día siguiente hábil a la hora de apertura
-                     posibleInicio.setDate(posibleInicio.getDate() + (diaPosible === 6 ? 2 : 1));
-                     posibleInicio.setHours(HORA_APERTURA, 0, 0, 0);
+                    posibleInicio.setDate(posibleInicio.getDate() + (diaPosible === 6 ? 2 : 1));
+                    posibleInicio.setHours(HORA_APERTURA, 0, 0, 0);
                 }
             }
-
             return res.status(409).json({
-                mensaje: 'Error (RN-02): La ventana horaria solicitada se solapa con un pedido existente.',
+                mensaje: 'Error (RN-02): La ventana horaria solicitada se solapa.',
                 alternativasDisponibles: alternativas
             });
         }
 
+        // 4. AUTOGENERACIÓN DEL CORRELATIVO (HU-03)
+        // Consultar el número de equipo en parámetros (Por defecto '03' para tu equipo)
+        const paramEquipo = await Parametro.findOne({ clave: 'numero_equipo', activo: true });
+        const numEquipo = paramEquipo ? paramEquipo.valor : '03';
+        const prefijo = `PED-EQUI${numEquipo}-`;
+
+        // Contar el total histórico de pedidos para asignar el siguiente correlativo
+        const totalPedidos = await Pedido.countDocuments({ numeroPedido: { $regex: `^${prefijo}` } });
+        const correlativoPadded = String(totalPedidos + 1).padStart(9, '0');
+        const numeroPedidoGenerado = `${prefijo}${correlativoPadded}`;
+
+        // 5. Guardar Pedido
         const nuevoPedido = new Pedido({
-            numeroPedido,
+            numeroPedido: numeroPedidoGenerado,
             proveedorId,
             tipoProducto,
             fechaHoraProgramada: inicioVentana,

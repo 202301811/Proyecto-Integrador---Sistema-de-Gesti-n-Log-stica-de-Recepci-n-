@@ -15,7 +15,7 @@ const PedidoSchema = new mongoose.Schema({
   estado: {
     type: String,
     required: true,
-    enum: ['PROGRAMADO', 'ANTICIPADO', 'A TIEMPO', 'TARDÍO', 'AUSENTE', 'CANCELADO'],
+    enum: ['PROGRAMADO', 'ANTICIPADO', 'A TIEMPO', 'TARDÍO', 'AUSENTE', 'EN COLA', 'DESCARGANDO', 'FINALIZADO', 'CANCELADO'],
     default: 'PROGRAMADO',
     uppercase: true
   },

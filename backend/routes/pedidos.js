@@ -17,7 +17,6 @@ router.get('/', pedidoController.obtenerPedidos);
 // POST /api/pedidos - Crear nueva cita
 router.post('/',
     [
-        body('numeroPedido', 'El número de pedido es obligatorio').notEmpty().trim(),
         body('proveedorId', 'Debe ser un ID válido de MongoDB').isMongoId(),
         body('tipoProducto', 'El tipo de producto debe ser "construcción" o "general"').isIn(['construcción', 'general']),
         body('fechaHoraProgramada', 'La fecha y hora programada es obligatoria (formato ISO8601)').isISO8601(),

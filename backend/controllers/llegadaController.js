@@ -1,9 +1,11 @@
 const Pedido = require('../models/Pedido');
 const Parametro = require('../models/Parametro');
+const { registrarEvento } = require('../utils/auditoria'); // 1. Agregamos el helper de auditoría
 
 exports.registrarLlegada = async (req, res) => {
     try {
         const { numeroPedido } = req.body;
+        const usuarioId = req.usuario?.id || req.usuario?._id; // 2. Capturamos el ID del usuario
         const nombreUsuario = req.usuario?.nombre || 'Operador Caseta';
 
         // 1. Buscar el pedido programado
@@ -15,11 +17,11 @@ exports.registrarLlegada = async (req, res) => {
             return res.status(400).json({ mensaje: `El pedido ya fue procesado. Estado actual: ${pedido.estado}` });
         }
 
-        // 2. Registrar hora real del servidor[cite: 10]
+        // 2. Registrar hora real del servidor
         const horaLlegada = new Date();
         const inicioVentana = new Date(pedido.inicioVentana);
 
-        // 3. Consultar tolerancias dinámicas en la colección de parámetros[cite: 10]
+        // 3. Consultar tolerancias dinámicas en la colección de parámetros
         const paramAnticipado = await Parametro.findOne({ clave: 'TOLERANCIA_ANTICIPADO', activo: true });
         const paramTardio = await Parametro.findOne({ clave: 'TOLERANCIA_TARDIO', activo: true });
 
@@ -39,12 +41,19 @@ exports.registrarLlegada = async (req, res) => {
             estadoPuntualidad = 'TARDÍO';
         }
 
-        // 6. Actualizar la transacción en el documento original del pedido[cite: 10]
+        // 6. Actualizar la transacción en el documento original del pedido
         pedido.fechaHoraLlegadaReal = horaLlegada;
         pedido.estado = estadoPuntualidad;
         pedido.usuarioActualizacion = nombreUsuario;
 
         await pedido.save();
+
+        // 7. AUDITORÍA RN-14: Registro inmutable de la llegada a caseta
+            await registrarEvento(usuarioId, nombreUsuario, 'LLEGADA_REGISTRADA', pedido._id, {
+                numeroPedido: pedido.numeroPedido,
+                estadoAsignado: estadoPuntualidad,
+                minutosDiferencia: Math.round(difMinutos)
+            });
 
         res.status(200).json({
             mensaje: `Arribo registrado en caseta. Clasificación: ${estadoPuntualidad}`,

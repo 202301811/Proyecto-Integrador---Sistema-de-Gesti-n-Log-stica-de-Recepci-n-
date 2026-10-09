@@ -1,54 +1,55 @@
 const Descarga = require('../models/Descarga');
 const Gateway = require('../models/Gateway');
 const Pedido = require('../models/Pedido');
+const { registrarEvento } = require('../utils/auditoria');
 
 // POST: Iniciar Descarga (Aplica RN-07 y RN-08)
 exports.iniciarDescarga = async (req, res) => {
     try {
         const { pedidoId, gatewayId } = req.body;
+        const usuarioId = req.usuario?.id; // Requerimos el ID del token
         const nombreUsuario = req.usuario?.nombre || 'Operador de Descarga';
         
-        // 1. Buscar entidades
         const pedido = await Pedido.findById(pedidoId);
         const gateway = await Gateway.findById(gatewayId);
 
-        if (!pedido || !pedido.activo) return res.status(404).json({ mensaje: 'Pedido no encontrado o inactivo.' });
-        if (!gateway || !gateway.activo) return res.status(404).json({ mensaje: 'Gateway no encontrado o inactivo.' });
-
-        // 2. Validar que el Gateway esté LIBRE
-        if (gateway.estado !== 'LIBRE') {
-            return res.status(400).json({ mensaje: `El Gateway ${gateway.numeroGateway} no está disponible. Estado actual: ${gateway.estado}` });
-        }
-
-        // 3. Reglas de Exclusividad (RN-07 y RN-08)
-        if (pedido.tipoProducto !== gateway.tipoCargaPermitida) {
-            return res.status(400).json({ 
-                mensaje: `Error de Incompatibilidad (RN-07/08): Intentó asignar un pedido de tipo '${pedido.tipoProducto.toUpperCase()}' al Gateway ${gateway.numeroGateway} que es exclusivo para '${gateway.tipoCargaPermitida.toUpperCase()}'.`
-            });
-        }
-
-        // 4. Iniciar la transacción
-        const fechaInicio = new Date();
+        if (!pedido || !pedido.activo) return res.status(404).json({ mensaje: 'Pedido no encontrado.' });
+        if (!gateway || !gateway.activo) return res.status(404).json({ mensaje: 'Gateway no encontrado.' });
         
+        if (gateway.estado !== 'LIBRE') {
+            return res.status(400).json({ mensaje: `El Gateway ${gateway.numeroGateway} no está disponible.` });
+        }
+        
+        if (pedido.tipoProducto !== gateway.tipoCargaPermitida) {
+            return res.status(400).json({ mensaje: `Error (RN-07/08): Incompatibilidad de carga.` });
+        }
+
+        const fechaInicio = new Date();
         const nuevaDescarga = new Descarga({
             gatewayId,
             pedidoId,
+            operadorId: usuarioId,
             fechaHoraInicio: fechaInicio,
             usuarioCreacion: nombreUsuario,
             usuarioActualizacion: nombreUsuario
         });
 
-        // 5. Actualizar estados
         gateway.estado = 'OCUPADO';
         gateway.usuarioActualizacion = nombreUsuario;
-        
         pedido.estado = 'DESCARGANDO';
         pedido.usuarioActualizacion = nombreUsuario;
 
-        // Guardar todo en la base de datos
         await nuevaDescarga.save();
         await gateway.save();
         await pedido.save();
+
+        // AUDITORÍA RN-14: Registro de inicio
+            await registrarEvento(usuarioId, nombreUsuario, 'GATEWAY_ASIGNADO', pedidoId, { 
+                gatewayAsignado: gateway.numeroGateway 
+            });
+            await registrarEvento(usuarioId, nombreUsuario, 'DESCARGADA_INICIADA', pedidoId, { 
+                tipoCarga: pedido.tipoProducto 
+            });
 
         res.status(201).json({ mensaje: 'Descarga iniciada con éxito', descarga: nuevaDescarga });
     } catch (error) {
@@ -56,24 +57,21 @@ exports.iniciarDescarga = async (req, res) => {
     }
 };
 
-// POST: Finalizar Descarga
+// POST: Finalizar Descarga (Aplica RN-11 y Atomicidad)
 exports.finalizarDescarga = async (req, res) => {
     try {
-        const { descargaId, gatewayId } = req.body; // Agregamos gatewayId
+        const { descargaId, gatewayId } = req.body;
+        const usuarioId = req.usuario?.id; 
         const nombreUsuario = req.usuario?.nombre || 'Operador de Descarga';
 
-        // Truco para el Frontend: Si nos mandan el gatewayId, buscamos automáticamente la descarga activa
         let descarga;
-        if (descargaId) {
-            descarga = await Descarga.findById(descargaId);
-        } else if (gatewayId) {
-            descarga = await Descarga.findOne({ gatewayId, fechaHoraFin: null });
-        }
+        if (descargaId) descarga = await Descarga.findById(descargaId);
+        else if (gatewayId) descarga = await Descarga.findOne({ gatewayId, fechaHoraFin: null });
 
         if (!descarga) return res.status(404).json({ mensaje: 'No hay una descarga activa en este Gateway.' });
-        if (descarga.fechaHoraFin) return res.status(400).json({ mensaje: 'Esta descarga ya fue finalizada previamente.' });
+        if (descarga.fechaHoraFin) return res.status(400).json({ mensaje: 'Esta descarga ya fue finalizada.' });
 
-        // 1. Calcular tiempos
+        // 1. Captura Temporal y Cálculo de Duración
         const fechaFin = new Date();
         const duracionMs = fechaFin.getTime() - descarga.fechaHoraInicio.getTime();
         const duracionMinutos = Math.round(duracionMs / 60000);
@@ -82,28 +80,45 @@ exports.finalizarDescarga = async (req, res) => {
         descarga.duracionMinutos = duracionMinutos;
         descarga.usuarioActualizacion = nombreUsuario;
 
-        // 2. Liberar Gateway
-        const gateway = await Gateway.findById(descarga.gatewayId);
-        if (gateway) {
-            gateway.estado = 'LIBRE';
-            gateway.usuarioActualizacion = nombreUsuario;
-            await gateway.save();
-        }
+        // 2. Transición de Estados (Atomicidad: Guardamos en orden estricto)
+        await descarga.save(); // Primero registramos el fin en la descarga
 
-        // 3. Finalizar Pedido
         const pedido = await Pedido.findById(descarga.pedidoId);
         if (pedido) {
             pedido.estado = 'FINALIZADO';
             pedido.usuarioActualizacion = nombreUsuario;
-            await pedido.save();
+            await pedido.save(); // Segundo el pedido
         }
 
-        // Guardar transacción
-        await descarga.save();
+        const gateway = await Gateway.findById(descarga.gatewayId);
+        if (gateway) {
+            gateway.estado = 'LIBRE';
+            gateway.usuarioActualizacion = nombreUsuario;
+            await gateway.save(); // Tercero liberamos la bahía
+        }
+
+        // 3. AUDITORÍA RN-14: Registro de fin
+            await registrarEvento(usuarioId, nombreUsuario, 'DESCARGA_FINALIZADA', pedido._id, {
+                gatewayLiberado: gateway?.numeroGateway,
+                duracionMinutos: duracionMinutos
+            });
+
+        // 4. Reevaluación de Cola (Verificar si hay vehículos esperando compatibles)
+        const siguienteEnCola = await Pedido.findOne({ 
+            estado: 'EN COLA', 
+            tipoProducto: gateway?.tipoCargaPermitida,
+            activo: true
+        }).sort({ fechaHoraLlegadaReal: 1 }); // El que llegó primero
+
+        let mensajeCola = 'No hay vehículos en cola.';
+        if (siguienteEnCola) {
+            mensajeCola = `El vehículo ${siguienteEnCola.numeroPedido} está en cola y es compatible con el Gateway ${gateway?.numeroGateway}.`;
+        }
 
         res.status(200).json({ 
             mensaje: 'Descarga finalizada y Gateway liberado', 
-            duracionMinutos, 
+            duracionMinutos,
+            mensajeCola,
             descarga 
         });
     } catch (error) {

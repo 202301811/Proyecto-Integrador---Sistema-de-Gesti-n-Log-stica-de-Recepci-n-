@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Home, Truck, Calendar, Settings, Clock, LogOut } from 'lucide-react';
+import { Menu, X, Home, Truck, Calendar, Settings, Clock, LogOut, BarChart3 } from 'lucide-react'; // 1. Agregado BarChart3
 
 export default function Sidebar({ rol, onLogout }) {
   const [expandido, setExpandido] = useState(true);
@@ -25,12 +25,14 @@ export default function Sidebar({ rol, onLogout }) {
     if (esMovil) setExpandido(false);
   }, [pathname, esMovil]);
 
+  // 2. Se agrega el enlace de KPIs con acceso exclusivo (sin incluir al operador)
   const enlaces = [
     { href: `/dashboard/${rol}`, label: 'Inicio', icono: <Home size={20} />, roles: ['coordinador', 'operador'] },
     { href: `/dashboard/${rol}/proveedores`, label: 'Proveedores', icono: <Truck size={20} />, roles: ['coordinador'] },
     { href: `/dashboard/${rol}/pedidos`, label: 'Programar Citas', icono: <Calendar size={20} />, roles: ['coordinador'] },
     { href: `/dashboard/${rol}/parametros`, label: 'Parámetros', icono: <Settings size={20} />, roles: ['coordinador'] },
     { href: `/dashboard/${rol}/arribos`, label: 'Control Caseta', icono: <Clock size={20} />, roles: ['coordinador', 'operador'] },
+    { href: `/dashboard/${rol}/kpis`, label: 'Indicadores (KPIs)', icono: <BarChart3 size={20} />, roles: ['coordinador', 'administrador'] },
   ];
 
   const enlacesPermitidos = enlaces.filter(enlace => enlace.roles.includes(rol));
@@ -106,7 +108,7 @@ export default function Sidebar({ rol, onLogout }) {
           })}
         </nav>
 
-        {/* Footer (Con pb-5 para alejarlo de la letra 'N' del entorno de desarrollo) */}
+        {/* Footer */}
         <div className="p-3 pb-5 border-top border-secondary w-100 flex-shrink-0 bg-dark">
           <button 
             onClick={onLogout} 

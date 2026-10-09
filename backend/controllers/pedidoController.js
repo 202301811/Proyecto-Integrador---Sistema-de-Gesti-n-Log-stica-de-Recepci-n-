@@ -1,6 +1,7 @@
 const Pedido = require('../models/Pedido');
 const Proveedor = require('../models/Proveedor');
 const Parametro = require('../models/Parametro');
+const { registrarEvento } = require('../utils/auditoria');
 
 const HORA_APERTURA = 7;
 const HORA_CIERRE = 17;
@@ -121,6 +122,11 @@ exports.reprogramarPedido = async (req, res) => {
             { ...req.body, usuarioActualizacion: nombreUsuario },
             { new: true }
         );
+        // AUDITORÍA RN-14: Registro de reprogramación
+        const usuarioId = req.usuario?.id || req.usuario?._id;
+            await registrarEvento(usuarioId, nombreUsuario, 'CITA_REPROGRAMADA', pedidoActualizado._id, {
+                nuevaFecha: pedidoActualizado.fechaHoraProgramada
+            });
         
         if (!pedidoActualizado) {
             return res.status(404).json({ mensaje: 'Pedido no encontrado' });

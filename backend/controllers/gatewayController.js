@@ -1,4 +1,5 @@
 const Gateway = require('../models/Gateway');
+const { registrarEvento } = require('../utils/auditoria');
 
 // POST: Crear Gateway (Normalmente se crean los 5 al inicio del proyecto)
 exports.crearGateway = async (req, res) => {
@@ -39,6 +40,14 @@ exports.actualizarGateway = async (req, res) => {
         if (!gatewayExistente) {
             return res.status(404).json({ mensaje: 'Gateway no encontrado' });
         }
+
+        // AUDITORÍA RN-14: Registro de mantenimiento
+        const usuarioId = req.usuario?.id || req.usuario?._id;
+            await registrarEvento(usuarioId, nombreUsuario, 'GATEWAY_MANTENIMIENTO', null, {
+                gateway: gatewayExistente.numeroGateway,
+                estadoAnterior: gatewayExistente.estado,
+                nuevoEstado: estado
+            });
 
         // Validaciones Estrictas (RN-GW-01 y RN-GW-02)
         if (gatewayExistente.estado === 'OCUPADO') {

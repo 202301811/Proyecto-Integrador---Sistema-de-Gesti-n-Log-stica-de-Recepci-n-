@@ -29,6 +29,13 @@ Proyecto Integrador interdisciplinar desarrollado para la Facultad de Economía,
 * **Motor Transaccional de Descargas:** Endpoints de inicialización y finalización de descargas (`POST /api/descargas/...`) que actualizan en cadena (cadena de responsabilidades) los estados de los pedidos (`EN COLA`, `DESCARGANDO`, `FINALIZADO`) y la disponibilidad en tiempo real de la bahía.
 * **UI en Tiempo Real:** Tablero interactivo (Dashboard principal) con representación visual semántica por código de colores (Verde = Libre, Rojo = Ocupado, Gris = Fuera de Servicio) para monitoreo logístico.
 
+### Sprint 4: Cierre Transaccional, Auditoría Inmutable y Dashboard de KPIs
+- **Atomicidad Transaccional (HU-03 / RN-11):** Cierre del ciclo operativo con cálculo automático de la duración de descargas[cite: 37]. Implementación de una regla estricta que impide liberar un gateway sin haber registrado previamente la fecha y hora de finalización en la colección de descargas y actualizado el estado del pedido a `FINALIZADO`[cite: 37].
+- **Reevaluación Automática de Cola:** Motor lógico que, al liberarse una bahía, ejecuta de forma automática una consulta en la base de datos para promocionar al siguiente vehículo elegible en estado `EN COLA`[cite: 37].
+- **Trazabilidad Inmutable (RN-14):** Implementación de la colección `eventos` para cumplir con los requerimientos de auditoría y seguridad bajo un modelo estricto de solo lectura (INSERT-ONLY) que prohíbe la edición o eliminación física de registros históricos[cite: 37]. El sistema registra silenciosamente eventos obligatorios (como `LLEGADA_REGISTRADA`, `GATEWAY_ASIGNADO`, `DESCARGADA_INICIADA`, `DESCARGA_FINALIZADA`, entre otros) capturando el ID del usuario directamente desde el token JWT[cite: 37].
+- **Dashboard Analítico Logístico:** Motor matemático en el backend utilizando *Aggregation Pipelines* de MongoDB para calcular métricas en tiempo real, conectado a una interfaz visual en Next.js construida con *Recharts*[cite: 37]. El tablero muestra 5 indicadores clave: Tiempo Promedio de Espera, Tiempo Promedio de Descarga comparativo, Nivel de Cumplimiento de arribos, Tasa de Ocupación por Muelle y Volumen Diario de Recepción[cite: 37].
+- **Control de Acceso Analítico:** Rutas y vistas de los indicadores logísticos protegidas y de acceso exclusivo para los roles de Coordinador Logístico y Administrador[cite: 37].
+
 ---
 
 ## ⚙️ Instrucciones de Ejecución Local

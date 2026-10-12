@@ -27,7 +27,7 @@ export default function Sidebar({ rol, onLogout }) {
 
   // 2. Se agrega el enlace de KPIs con acceso exclusivo (sin incluir al operador)
   const enlaces = [
-    { href: `/dashboard/${rol}`, label: 'Inicio', icono: <Home size={20} />, roles: ['coordinador', 'operador'] },
+    { href: `/dashboard/${rol}`, label: 'Inicio', icono: <Home size={20} />, roles: ['coordinador', 'operador', 'administrador'] },
     { href: `/dashboard/${rol}/proveedores`, label: 'Proveedores', icono: <Truck size={20} />, roles: ['coordinador'] },
     { href: `/dashboard/${rol}/pedidos`, label: 'Programar Citas', icono: <Calendar size={20} />, roles: ['coordinador'] },
     { href: `/dashboard/${rol}/parametros`, label: 'Parámetros', icono: <Settings size={20} />, roles: ['coordinador'] },

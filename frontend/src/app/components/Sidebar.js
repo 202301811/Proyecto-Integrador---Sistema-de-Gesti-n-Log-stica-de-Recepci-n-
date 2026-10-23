@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Home, Truck, Calendar, Settings, Clock, LogOut, BarChart3 } from 'lucide-react'; // 1. Agregado BarChart3
+import { Menu, X, Home, Truck, Calendar, Settings, Clock, LogOut, BarChart3, Users, Package } from 'lucide-react';
 
 export default function Sidebar({ rol, onLogout }) {
   const [expandido, setExpandido] = useState(true);
@@ -33,6 +33,7 @@ export default function Sidebar({ rol, onLogout }) {
     { href: `/dashboard/${rol}/parametros`, label: 'Parámetros', icono: <Settings size={20} />, roles: ['coordinador'] },
     { href: `/dashboard/${rol}/arribos`, label: 'Control Caseta', icono: <Clock size={20} />, roles: ['coordinador', 'operador'] },
     { href: `/dashboard/${rol}/kpis`, label: 'Indicadores (KPIs)', icono: <BarChart3 size={20} />, roles: ['coordinador', 'administrador'] },
+    { href: `/dashboard/${rol}/usuarios`, label: 'Usuarios', icono: <Users size={20} />, roles: ['administrador'] },
   ];
 
   const enlacesPermitidos = enlaces.filter(enlace => enlace.roles.includes(rol));

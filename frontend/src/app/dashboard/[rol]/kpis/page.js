@@ -88,7 +88,7 @@ export default function DashboardKpisPage({ params }) {
             <div className="card border-0 shadow-sm rounded-4 h-100 bg-primary text-white">
               <div className="card-body p-4 d-flex flex-column justify-content-center align-items-center text-center">
                 <Clock size={48} className="mb-3 opacity-75" />
-                <h6 className="fw-bold text-uppercase opacity-75 mb-1">Tiempo Promedio de Espera</h6>
+                <h6 className="fw-bold text-uppercase opacity-75 mb-1">Tiempo Promedio de Espera (minutos)</h6>
                 <h1 className="display-4 fw-bold mb-0">{dataKpi.espera} <span className="fs-4">min</span></h1>
                 <small className="mt-2 opacity-75">Desde caseta hasta inicio en muelle</small>
               </div>
@@ -99,7 +99,7 @@ export default function DashboardKpisPage({ params }) {
           <div className="col-12 col-md-8">
             <div className="card border-0 shadow-sm rounded-4 h-100">
               <div className="card-body p-4">
-                <h5 className="fw-bold mb-4">Promedio de Descarga por Categoría</h5>
+                <h5 className="fw-bold mb-4">Promedio de Descarga por Categoría (minutos)</h5>
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={dataKpi.descarga} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
@@ -137,7 +137,7 @@ export default function DashboardKpisPage({ params }) {
           <div className="col-12 col-lg-8">
             <div className="card border-0 shadow-sm rounded-4 h-100">
               <div className="card-body p-4">
-                <h5 className="fw-bold mb-4">Tasa de Ocupación por Muelle (Minutos Totales)</h5>
+                <h5 className="fw-bold mb-4">Tasa de Ocupación por Muelle (minutos)</h5>
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={dataKpi.ocupacion} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />

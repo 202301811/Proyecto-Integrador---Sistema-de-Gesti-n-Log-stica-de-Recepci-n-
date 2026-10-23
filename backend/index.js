@@ -3,7 +3,10 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
+// Importación de rutas
 const authRoutes = require('./routes/auth');
+const mfaRoutes = require('./routes/mfa'); 
+const usuarioRoutes = require('./routes/usuarios'); 
 const proveedorRoutes = require('./routes/proveedores');
 const pedidoRoutes = require('./routes/pedidos');
 
@@ -15,8 +18,10 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/gestio
 app.use(cors());
 app.use(express.json());
 
-// Rutas
+// Rutas registradas en Express
 app.use('/api/auth', authRoutes);
+app.use('/api/mfa', mfaRoutes);
+app.use('/api/usuarios', usuarioRoutes); 
 app.use('/api/proveedores', proveedorRoutes);
 app.use('/api/pedidos', pedidoRoutes);
 app.use('/api/parametros', require('./routes/parametros'));

@@ -2,39 +2,44 @@
 
 Proyecto Integrador interdisciplinar desarrollado para la Facultad de Economía, Empresa y Negocios FEEN.
 
-
 ## 🚀 Módulos Implementados
 
 ### Sprint 0: Módulo de Autenticación y Control de Acceso (RBAC)
-* **Seguridad:** Hash asíncrono de contraseñas con bcrypt y generación de tokens JWT con expiración de 24 horas.
-* **Control de Acceso:** Validación de roles (Administrador, Coordinador, Operador) y redirección dinámica en el frontend.
-* **Persistencia:** Almacenamiento seguro del token en localStorage y flujo de cierre de sesión seguro.
+- **Seguridad:** Hash asíncrono de contraseñas con bcrypt y generación de tokens JWT con expiración de 24 horas.
+- **Control de Acceso:** Validación de roles (Administrador, Coordinador, Operador) y redirección dinámica en el frontend.
+- **Persistencia:** Almacenamiento seguro del token en localStorage y flujo de cierre de sesión seguro.
 
 ### Sprint 1: Módulo de Ventanas Horarias y Proveedores (Arquitectura MVC)
-* **Registro de Proveedores:** Restricción de categorías y validación estricta de datos desde el backend usando express-validator.
-* **Integridad Referencial (RN-01):** Prevención de pedidos huérfanos validando la existencia del proveedor en la base de datos antes de programar una cita.
-* **Algoritmo de Ventanas Horarias (RN-02):** Sistema de detección de solapamiento. Si una cita choca con otra o está fuera del horario operativo (8:00 AM - 5:00 PM), el sistema bloquea la transacción y sugiere automáticamente **3 ventanas alternativas disponibles**.
-* **Protección de Rutas:** Formularios de programación de uso exclusivo para el rol de **Coordinador**.
+- **Registro de Proveedores:** Restricción de categorías y validación estricta de datos desde el backend usando express-validator.
+- **Integridad Referencial (RN-01):** Prevención de pedidos huérfanos validando la existencia del proveedor en la base de datos antes de programar una cita.
+- **Algoritmo de Ventanas Horarias (RN-02):** Sistema de detección de solapamiento. Si una cita choca con otra o está fuera del horario operativo (8:00 AM - 5:00 PM), el sistema bloquea la transacción y sugiere automáticamente **3 ventanas alternativas disponibles**.
+- **Protección de Rutas:** Formularios de programación de uso exclusivo para el rol de **Coordinador**.
 
 ### Sprint 2: Control de Arribos, Clasificación Temporal y Mantenimientos con Auditoría (HU-02)
-* **Arquitectura de Interfaz (Frontend):** Sidebar responsivo e híbrido en Next.js (fijo colapsable en escritorio, Off-Canvas en móviles menores a 992px). Vista de caseta móvil optimizada (360px) con alertas visuales por color.
-* **Módulos de Mantenimiento (CRUDs):** Gestión integral de Proveedores, Citas/Pedidos y Parámetros. Inclusión de validación de horarios operativos (07:00 - 17:00 L-S) y gestión dinámica de límites de tolerancia.
-* **Motor de Clasificación Temporal:** Endpoint POST /api/llegadas que captura la hora del servidor y clasifica automáticamente el estado logístico (A TIEMPO, ANTICIPADO, TARDÍO, AUSENTE).
-* **Soft Delete (Borrado Lógico):** Cumplimiento estricto de la política de cero borrado físico. Todas las operaciones de inactivación actualizan la bandera activo: false, filtrando las lecturas GET para mostrar únicamente registros vigentes.
+- **Arquitectura de Interfaz (Frontend):** Sidebar responsivo e híbrido en Next.js (fijo colapsable en escritorio, Off-Canvas en móviles menores a 992px). Vista de caseta móvil optimizada (360px) con alertas visuales por color.
+- **Módulos de Mantenimiento (CRUDs):** Gestión integral de Proveedores, Citas/Pedidos y Parámetros. Inclusión de validación de horarios operativos (07:00 - 17:00 L-S) y gestión dinámica de límites de tolerancia.
+- **Motor de Clasificación Temporal:** Endpoint POST /api/llegadas que captura la hora del servidor y clasifica automáticamente el estado logístico (A TIEMPO, ANTICIPADO, TARDÍO, AUSENTE).
+- **Soft Delete (Borrado Lógico):** Cumplimiento estricto de la política de cero borrado físico. Todas las operaciones de inactivación actualizan la bandera activo: false, filtrando las lecturas GET para mostrar únicamente registros vigentes.
 
 ### Sprint 3: Gestión de Gateways, Exclusividad de Carga y Transacciones (HU-03)
-* **Autogeneración Correlativa:** Bloqueo de digitación manual del ID de pedido. Generación automática y blindada de códigos correlativos en formato estricto `PED-EQUI[num]-[00000000X]` basado en un parámetro de base de datos configurable dinámicamente.
-* **Control Físico y Exclusividad (RN-07 y RN-08):** Gestión de 5 gateways de descarga en base de datos. Implementación de reglas de exclusividad operativas: GW 1 al 4 para carga 'general' y GW 5 exclusivo para 'construcción'.
-* **Validaciones de Infraestructura (RN-GW-01 y RN-GW-02):** Restricciones lógicas de negocio que prohíben cambiar a estado 'FUERA DE SERVICIO' o alterar el tipo de carga de una bahía mientras esta se encuentra atendiendo una operación (estado 'OCUPADO').
-* **Motor Transaccional de Descargas:** Endpoints de inicialización y finalización de descargas (`POST /api/descargas/...`) que actualizan en cadena (cadena de responsabilidades) los estados de los pedidos (`EN COLA`, `DESCARGANDO`, `FINALIZADO`) y la disponibilidad en tiempo real de la bahía.
-* **UI en Tiempo Real:** Tablero interactivo (Dashboard principal) con representación visual semántica por código de colores (Verde = Libre, Rojo = Ocupado, Gris = Fuera de Servicio) para monitoreo logístico.
+- **Autogeneración Correlativa:** Bloqueo de digitación manual del ID de pedido. Generación automática y blindada de códigos correlativos en formato estricto `PED-EQUI[num]-[00000000X]` basado en un parámetro de base de datos configurable dinámicamente.
+- **Control Físico y Exclusividad (RN-07 y RN-08):** Gestión de 5 gateways de descarga en base de datos. Implementación de reglas de exclusividad operativas: GW 1 al 4 para carga 'general' y GW 5 exclusivo para 'construcción'.
+- **Validaciones de Infraestructura (RN-GW-01 y RN-GW-02):** Restricciones lógicas de negocio que prohíben cambiar a estado 'FUERA DE SERVICIO' o alterar el tipo de carga de una bahía mientras esta se encuentra atendiendo una operación (estado 'OCUPADO').
+- **Motor Transaccional de Descargas:** Endpoints de inicialización y finalización de descargas (`POST /api/descargas/...`) que actualizan en cadena (cadena de responsabilidades) los estados de los pedidos (`EN COLA`, `DESCARGANDO`, `FINALIZADO`) y la disponibilidad en tiempo real de la bahía.
+- **UI en Tiempo Real:** Tablero interactivo (Dashboard principal) con representación visual semántica por código de colores (Verde = Libre, Rojo = Ocupado, Gris = Fuera de Servicio) para monitoreo logístico.
 
 ### Sprint 4: Cierre Transaccional, Auditoría Inmutable y Dashboard de KPIs
-- **Atomicidad Transaccional (HU-03 / RN-11):** Cierre del ciclo operativo con cálculo automático de la duración de descargas[cite: 37]. Implementación de una regla estricta que impide liberar un gateway sin haber registrado previamente la fecha y hora de finalización en la colección de descargas y actualizado el estado del pedido a `FINALIZADO`[cite: 37].
-- **Reevaluación Automática de Cola:** Motor lógico que, al liberarse una bahía, ejecuta de forma automática una consulta en la base de datos para promocionar al siguiente vehículo elegible en estado `EN COLA`[cite: 37].
-- **Trazabilidad Inmutable (RN-14):** Implementación de la colección `eventos` para cumplir con los requerimientos de auditoría y seguridad bajo un modelo estricto de solo lectura (INSERT-ONLY) que prohíbe la edición o eliminación física de registros históricos[cite: 37]. El sistema registra silenciosamente eventos obligatorios (como `LLEGADA_REGISTRADA`, `GATEWAY_ASIGNADO`, `DESCARGADA_INICIADA`, `DESCARGA_FINALIZADA`, entre otros) capturando el ID del usuario directamente desde el token JWT[cite: 37].
-- **Dashboard Analítico Logístico:** Motor matemático en el backend utilizando *Aggregation Pipelines* de MongoDB para calcular métricas en tiempo real, conectado a una interfaz visual en Next.js construida con *Recharts*[cite: 37]. El tablero muestra 5 indicadores clave: Tiempo Promedio de Espera, Tiempo Promedio de Descarga comparativo, Nivel de Cumplimiento de arribos, Tasa de Ocupación por Muelle y Volumen Diario de Recepción[cite: 37].
-- **Control de Acceso Analítico:** Rutas y vistas de los indicadores logísticos protegidas y de acceso exclusivo para los roles de Coordinador Logístico y Administrador[cite: 37].
+- **Atomicidad Transaccional (HU-03 / RN-11):** Cierre del ciclo operativo con cálculo automático de la duración de descargas. Implementación de una regla estricta que impide liberar un gateway sin haber registrado previamente la fecha y hora de finalización en la colección de descargas y actualizado el estado del pedido a `FINALIZADO`.
+- **Reevaluación Automática de Cola:** Motor lógico que, al liberarse una bahía, ejecuta de forma automática una consulta en la base de datos para promocionar al siguiente vehículo elegible en estado `EN COLA`.
+- **Trazabilidad Inmutable (RN-14):** Implementación de la colección `eventos` para cumplir con los requerimientos de auditoría y seguridad bajo un modelo estricto de solo lectura (INSERT-ONLY) que prohíbe la edición o eliminación física de registros históricos. El sistema registra silenciosamente eventos obligatorios (como `LLEGADA_REGISTRADA`, `GATEWAY_ASIGNADO`, `DESCARGADA_INICIADA`, `DESCARGA_FINALIZADA`, entre otros) capturando el ID del usuario directamente desde el token JWT.
+- **Dashboard Analítico Logístico:** Motor matemático en el backend utilizando *Aggregation Pipelines* de MongoDB para calcular métricas en tiempo real, conectado a una interfaz visual en Next.js construida con *Recharts*. El tablero muestra 5 indicadores clave: Tiempo Promedio de Espera, Tiempo Promedio de Descarga comparativo, Nivel de Cumplimiento de arribos, Tasa de Ocupación por Muelle y Volumen Diario de Recepción.
+- **Control de Acceso Analítico:** Rutas y vistas de los indicadores logísticos protegidas y de acceso exclusivo para los roles de Coordinador Logístico y Administrador.
+
+### Sprint 5: Gobernanza de Seguridad MFA y Autenticación de Dos Factores
+- **Gobernanza Administrativa:** Panel de gestión de usuarios con capacidad de forzar el enrolamiento MFA (Multi-Factor Authentication) mediante un interruptor de seguridad, aplicable transversalmente a cualquier rol del sistema operativo o administrativo.
+- **Enrolamiento TOTP (Time-Based One-Time Password):** Integración nativa con Google Authenticator mediante la generación de secretos criptográficos en Base32 (`speakeasy`) y renderizado de códigos QR (`qrcode.react`) en la interfaz de Next.js.
+- **Arquitectura de Tokens en Dos Fases:** Sistema de seguridad de confianza cero. Al detectar un usuario con MFA obligatorio, el sistema retiene el login y emite un `tempToken` restrictivo con 5 minutos de vida. Únicamente tras la validación criptográfica exitosa de los 6 dígitos, el token temporal es destruido y sustituido por el JWT definitivo de 8 horas almacenado en el Local Storage.
+- **Validación Estricta y Prevención de Amenazas:** Implementación de esquemas de Mongoose con requerimientos estrictos para la integridad de datos (`nombres` y `apellidosCompleto`) y bloqueo automatizado ante el ingreso de códigos TOTP incorrectos para proteger el Dashboard.
 
 ---
 
@@ -66,7 +71,8 @@ Abre una **segunda terminal** paralela en la raíz del proyecto y ejecuta:
 
 ### 4. Credenciales de Prueba
 **Contraseña general para todos los usuarios:** Password123!
+*(Nota: Para pruebas de creación manual de usuarios, puedes utilizar contraseñas genéricas como `Demo1234!`)*
 
-* **Administrador:** admin@feen.ujmd.edu.sv
-* **Coordinador:** coordinador@feen.ujmd.edu.sv *(Utilizar este rol para probar el registro de proveedores, parámetros y programación de citas)*
-* **Operador:** operador@feen.ujmd.edu.sv *(Utilizar este rol para el control de caseta)*
+- **Administrador:** admin@feen.ujmd.edu.sv
+- **Coordinador:** coordinador@feen.ujmd.edu.sv *(Utilizar este rol para probar el registro de proveedores, parámetros y programación de citas)*
+- **Operador:** operador@feen.ujmd.edu.sv *(Utilizar este rol para el control de caseta)*

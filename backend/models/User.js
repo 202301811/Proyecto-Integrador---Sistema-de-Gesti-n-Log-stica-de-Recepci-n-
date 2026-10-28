@@ -33,6 +33,25 @@ const UserSchema = new mongoose.Schema({
     enum: ['activo', 'inactivo'],
     default: 'activo',
   },
+
+  // Nuevos campos para Sprint 5: MFA y Gobernanza 
+  mfaObligatorio: { 
+    type: Boolean, 
+    default: false 
+  },
+  twoFactorSecret: { 
+    type: String, 
+    select: false // Oculto por defecto por seguridad
+  },
+  twoFactorEnabled: { 
+    type: Boolean, 
+    default: false 
+  },
+  twoFactorRecoveryCodes: { 
+    type: [String], 
+    select: false // Códigos de respaldo ocultos
+  },
+
 }, { timestamps: true });
 
 // Encriptación asíncrona de contraseña antes de guardar

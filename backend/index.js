@@ -9,6 +9,7 @@ const mfaRoutes = require('./routes/mfa');
 const usuarioRoutes = require('./routes/usuarios'); 
 const proveedorRoutes = require('./routes/proveedores');
 const pedidoRoutes = require('./routes/pedidos');
+const colaRoutes = require('./routes/cola');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -17,6 +18,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/gestio
 // Middlewares
 app.use(cors());
 app.use(express.json());
+app.use('/api/cola', colaRoutes);
 
 // Rutas registradas en Express
 app.use('/api/auth', authRoutes);

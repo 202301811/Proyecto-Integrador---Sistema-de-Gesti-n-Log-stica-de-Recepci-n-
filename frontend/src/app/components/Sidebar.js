@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Home, Truck, Calendar, Settings, Clock, LogOut, BarChart3, Users, Package } from 'lucide-react';
+import { Menu, X, Home, Truck, Calendar, Settings, Clock, LogOut, BarChart3, Users, Package, ListOrdered } from 'lucide-react';
 
 export default function Sidebar({ rol, onLogout }) {
   const [expandido, setExpandido] = useState(true);
@@ -25,7 +25,6 @@ export default function Sidebar({ rol, onLogout }) {
     if (esMovil) setExpandido(false);
   }, [pathname, esMovil]);
 
-  // 2. Se agrega el enlace de KPIs con acceso exclusivo (sin incluir al operador)
   const enlaces = [
     { href: `/dashboard/${rol}`, label: 'Inicio', icono: <Home size={20} />, roles: ['coordinador', 'operador', 'administrador'] },
     { href: `/dashboard/${rol}/proveedores`, label: 'Proveedores', icono: <Truck size={20} />, roles: ['coordinador'] },
@@ -34,6 +33,7 @@ export default function Sidebar({ rol, onLogout }) {
     { href: `/dashboard/${rol}/arribos`, label: 'Control Caseta', icono: <Clock size={20} />, roles: ['coordinador', 'operador'] },
     { href: `/dashboard/${rol}/kpis`, label: 'Indicadores (KPIs)', icono: <BarChart3 size={20} />, roles: ['coordinador', 'administrador'] },
     { href: `/dashboard/${rol}/usuarios`, label: 'Usuarios', icono: <Users size={20} />, roles: ['administrador'] },
+    { href: `/cola`, label: 'Monitor de Cola', icono: <ListOrdered size={20} />, roles: ['coordinador', 'administrador'] },
   ];
 
   const enlacesPermitidos = enlaces.filter(enlace => enlace.roles.includes(rol));

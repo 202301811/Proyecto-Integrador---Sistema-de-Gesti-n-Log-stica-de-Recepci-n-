@@ -18,7 +18,7 @@ Proyecto Integrador interdisciplinar desarrollado para la Facultad de Economía,
 ### Sprint 2: Control de Arribos, Clasificación Temporal y Mantenimientos con Auditoría (HU-02)
 - **Arquitectura de Interfaz (Frontend):** Sidebar responsivo e híbrido en Next.js (fijo colapsable en escritorio, Off-Canvas en móviles menores a 992px). Vista de caseta móvil optimizada (360px) con alertas visuales por color.
 - **Módulos de Mantenimiento (CRUDs):** Gestión integral de Proveedores, Citas/Pedidos y Parámetros. Inclusión de validación de horarios operativos (07:00 - 17:00 L-S) y gestión dinámica de límites de tolerancia.
-- **Motor de Clasificación Temporal:** Endpoint POST /api/llegadas que captura la hora del servidor y clasifica automáticamente el estado logístico (A TIEMPO, ANTICIPADO, TARDÍO, AUSENTE).
+- **Motor de Clasificación Temporal:** Endpoint POST `/api/llegadas` que captura la hora del servidor y clasifica automáticamente el estado logístico (A TIEMPO, ANTICIPADO, TARDÍO, AUSENTE).
 - **Soft Delete (Borrado Lógico):** Cumplimiento estricto de la política de cero borrado físico. Todas las operaciones de inactivación actualizan la bandera activo: false, filtrando las lecturas GET para mostrar únicamente registros vigentes.
 
 ### Sprint 3: Gestión de Gateways, Exclusividad de Carga y Transacciones (HU-03)
@@ -30,16 +30,19 @@ Proyecto Integrador interdisciplinar desarrollado para la Facultad de Economía,
 
 ### Sprint 4: Cierre Transaccional, Auditoría Inmutable y Dashboard de KPIs
 - **Atomicidad Transaccional (HU-03 / RN-11):** Cierre del ciclo operativo con cálculo automático de la duración de descargas. Implementación de una regla estricta que impide liberar un gateway sin haber registrado previamente la fecha y hora de finalización en la colección de descargas y actualizado el estado del pedido a `FINALIZADO`.
-- **Reevaluación Automática de Cola:** Motor lógico que, al liberarse una bahía, ejecuta de forma automática una consulta en la base de datos para promocionar al siguiente vehículo elegible en estado `EN COLA`.
-- **Trazabilidad Inmutable (RN-14):** Implementación de la colección `eventos` para cumplir con los requerimientos de auditoría y seguridad bajo un modelo estricto de solo lectura (INSERT-ONLY) que prohíbe la edición o eliminación física de registros históricos. El sistema registra silenciosamente eventos obligatorios (como `LLEGADA_REGISTRADA`, `GATEWAY_ASIGNADO`, `DESCARGADA_INICIADA`, `DESCARGA_FINALIZADA`, entre otros) capturando el ID del usuario directamente desde el token JWT.
-- **Dashboard Analítico Logístico:** Motor matemático en el backend utilizando *Aggregation Pipelines* de MongoDB para calcular métricas en tiempo real, conectado a una interfaz visual en Next.js construida con *Recharts*. El tablero muestra 5 indicadores clave: Tiempo Promedio de Espera, Tiempo Promedio de Descarga comparativo, Nivel de Cumplimiento de arribos, Tasa de Ocupación por Muelle y Volumen Diario de Recepción.
-- **Control de Acceso Analítico:** Rutas y vistas de los indicadores logísticos protegidas y de acceso exclusivo para los roles de Coordinador Logístico y Administrador.
+- **Trazabilidad Inmutable (RN-14):** Implementación de la colección `eventos` para cumplir con los requerimientos de auditoría y seguridad bajo un modelo estricto de solo lectura (INSERT-ONLY) que prohíbe la edición o eliminación física de registros históricos.
+- **Dashboard Analítico Logístico:** Motor matemático en el backend utilizando *Aggregation Pipelines* de MongoDB para calcular métricas en tiempo real, conectado a una interfaz visual en Next.js construida con *Recharts*.
 
 ### Sprint 5: Gobernanza de Seguridad MFA y Autenticación de Dos Factores
-- **Gobernanza Administrativa:** Panel de gestión de usuarios con capacidad de forzar el enrolamiento MFA (Multi-Factor Authentication) mediante un interruptor de seguridad, aplicable transversalmente a cualquier rol del sistema operativo o administrativo.
-- **Enrolamiento TOTP (Time-Based One-Time Password):** Integración nativa con Google Authenticator mediante la generación de secretos criptográficos en Base32 (`speakeasy`) y renderizado de códigos QR (`qrcode.react`) en la interfaz de Next.js.
-- **Arquitectura de Tokens en Dos Fases:** Sistema de seguridad de confianza cero. Al detectar un usuario con MFA obligatorio, el sistema retiene el login y emite un `tempToken` restrictivo con 5 minutos de vida. Únicamente tras la validación criptográfica exitosa de los 6 dígitos, el token temporal es destruido y sustituido por el JWT definitivo de 8 horas almacenado en el Local Storage.
-- **Validación Estricta y Prevención de Amenazas:** Implementación de esquemas de Mongoose con requerimientos estrictos para la integridad de datos (`nombres` y `apellidosCompleto`) y bloqueo automatizado ante el ingreso de códigos TOTP incorrectos para proteger el Dashboard.
+- **Gobernanza Administrativa:** Panel de gestión de usuarios con capacidad de forzar el enrolamiento MFA (Multi-Factor Authentication) mediante un interruptor de seguridad.
+- **Enrolamiento TOTP:** Integración nativa con Google Authenticator mediante la generación de secretos criptográficos en Base32 (`speakeasy`) y renderizado de códigos QR.
+- **Arquitectura de Tokens en Dos Fases:** Sistema de seguridad de confianza cero reteniendo el login con un `tempToken` de 5 minutos que debe ser canjeado por un JWT definitivo solo tras validar el código de 6 dígitos.
+
+### Sprint 6: Integración de Funcionalidad de Ordenamiento y Cola de Prioridad
+- **Motor Algorítmico (Max-Heap):** Implementación de una Cola de Prioridad basada en la estructura de datos Heap Binario para organizar los pedidos en estado `EN COLA` con una complejidad de $O(\log n)$, evaluando la puntualidad (A TIEMPO > ANTICIPADO > TARDÍO) y la hora programada.
+- **Política de Envejecimiento (Aging):** Desarrollo de un algoritmo preventivo de inanición (starvation) de pedidos tardíos. Incrementa dinámicamente el peso de prioridad en función de los minutos en espera interactuando con el parámetro `factor_aging_min`.
+- **Reevaluación y Promoción Automática (RN-11):** Integración del motor algorítmico al cierre transaccional (`POST /api/descargas/finalizar`). Al liberar una bahía, la API extrae la raíz del Heap y asigna el recurso libre automáticamente al siguiente pedido elegible validando compatibilidad de carga (RN-07 / RN-08).
+- **Monitor de Cola en Next.js:** Interfaz visual interactiva que renderiza el orden estricto de la prioridad calculada por el backend. Actualiza de manera asíncrona y reactiva los repuntes de prioridad por Aging y los despachos automáticos a muelle, complementando las métricas de porcentaje operativo logístico.
 
 ---
 

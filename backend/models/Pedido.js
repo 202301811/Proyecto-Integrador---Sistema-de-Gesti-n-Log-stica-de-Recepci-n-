@@ -9,7 +9,7 @@ const PedidoSchema = new mongoose.Schema({
   finVentana: { type: Date, required: true },
   duracionEstimadaMinutos: { type: Number, required: true, min: 1 },
   
-  // Nuevo campo para el control de arribos (HU-02)
+  // Nuevo campo para el control de arribos 
   fechaHoraLlegadaReal: { type: Date },
   
   estado: {
@@ -23,7 +23,21 @@ const PedidoSchema = new mongoose.Schema({
   // Campos de Auditoría y Soft Delete
   activo: { type: Boolean, default: true },
   usuarioCreacion: { type: String, required: true },
-  usuarioActualizacion: { type: String, required: true }
+  usuarioActualizacion: { type: String, required: true },
+
+  // Nuevos campos para Sprint 6: Cola de Prioridad y Aging
+  prioridadCalculada: {
+    type: Number,
+    default: 0
+  },
+  fechaHoraIngresoCola: {
+    type: Date,
+    default: null
+  },
+  minutosEnEspera: {
+    type: Number,
+    default: 0
+  }
 }, { 
   timestamps: { createdAt: 'fechaCreacion', updatedAt: 'fechaActualizacion' } 
 });

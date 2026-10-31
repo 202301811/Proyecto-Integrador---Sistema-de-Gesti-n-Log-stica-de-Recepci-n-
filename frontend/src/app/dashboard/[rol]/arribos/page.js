@@ -1,6 +1,6 @@
 "use client";
 import { useState } from 'react';
-import { Search, Clock, CheckCircle, AlertTriangle, XCircle, Info } from 'lucide-react';
+import { Search, Clock, CheckCircle, AlertTriangle, XCircle, Info, ListOrdered } from 'lucide-react';
 
 export default function ControlCasetaPage() {
   const [numeroPedido, setNumeroPedido] = useState('');
@@ -37,17 +37,25 @@ export default function ControlCasetaPage() {
     }
   };
 
-  // Función para determinar el color y el ícono de la alerta visual
+  // Función para determinar el color, ícono y textos de la alerta visual
   const getConfiguracionVisual = (estado) => {
     switch (estado) {
       case 'A TIEMPO': 
-        return { color: 'success', bg: 'bg-success text-white', icono: <CheckCircle size={48} /> };
+        return { color: 'success', bg: 'bg-success text-white', icono: <CheckCircle size={48} />, titulo: 'A TIEMPO' };
       case 'ANTICIPADO': 
-        return { color: 'info', bg: 'bg-info text-dark', icono: <Info size={48} /> };
+        return { color: 'info', bg: 'bg-info text-dark', icono: <Info size={48} />, titulo: 'ANTICIPADO' };
       case 'TARDÍO': 
-        return { color: 'warning', bg: 'bg-warning text-dark', icono: <AlertTriangle size={48} /> };
+        return { color: 'warning', bg: 'bg-warning text-dark', icono: <AlertTriangle size={48} />, titulo: 'TARDÍO' };
+      case 'EN COLA': 
+        return { 
+          color: 'secondary', 
+          bg: 'bg-secondary text-white', 
+          icono: <ListOrdered size={48} />, 
+          titulo: 'EN COLA DE PRIORIDAD',
+          mensaje: 'Planta saturada: Vehículo enviado a la lista de espera.'
+        };
       default: 
-        return { color: 'danger', bg: 'bg-danger text-white', icono: <XCircle size={48} /> };
+        return { color: 'danger', bg: 'bg-danger text-white', icono: <XCircle size={48} />, titulo: estado };
     }
   };
 
@@ -104,7 +112,7 @@ export default function ControlCasetaPage() {
           </div>
         )}
 
-        {/* Alerta Visual por Color (Requerimiento HU-02) */}
+        {/* Alerta Visual por Color (Requerimiento HU-02 y Sprint 6) */}
         {resultado && (
           <div className={`card border-0 shadow-lg text-center ${getConfiguracionVisual(resultado.estado).bg} rounded-4 overflow-hidden transform transition-all`}>
             <div className="card-body p-5">
@@ -112,8 +120,15 @@ export default function ControlCasetaPage() {
                 {getConfiguracionVisual(resultado.estado).icono}
               </div>
               <h2 className="display-6 fw-bold mb-2">
-                {resultado.estado}
+                {getConfiguracionVisual(resultado.estado).titulo}
               </h2>
+              
+              {getConfiguracionVisual(resultado.estado).mensaje && (
+                <p className="fs-5 fw-semibold mb-3">
+                  {getConfiguracionVisual(resultado.estado).mensaje}
+                </p>
+              )}
+
               <p className="fs-5 mb-0 opacity-75">
                 Hora real: {new Date(resultado.fechaHoraLlegadaReal).toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}
               </p>

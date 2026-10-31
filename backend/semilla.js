@@ -2,6 +2,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const Role = require('./models/Role');
 const User = require('./models/User');
+const Parametro = require('./models/Parametro');
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/gestion_proveedores';
 
@@ -54,6 +55,27 @@ async function poblarDatos() {
     roles: [rolOper._id],
     estado: 'activo',
   });
+
+  // 3. Crear parámetros del algoritmo de Aging (Sprint 6)
+await Parametro.deleteMany({}); // Opcional: limpia parámetros viejos si quieres empezar de cero
+await Parametro.create([
+  {
+    clave: 'factor_aging_min',
+    valor: '5',
+    descripcion: 'Puntos de prioridad que se suman por cada minuto en espera (Aging)',
+    activo: true,
+    usuarioCreacion: 'admin_sistema',
+    usuarioActualizacion: 'admin_sistema'
+  },
+  {
+    clave: 'limite_espera_max',
+    valor: '30',
+    descripcion: 'Minutos máximos tolerados en cola antes de forzar prioridad crítica',
+    activo: true,
+    usuarioCreacion: 'admin_sistema',
+    usuarioActualizacion: 'admin_sistema'
+  }
+]);
 
   console.log('✅ Base de datos poblada con éxito. Contraseña para todos: Password123!');
   mongoose.connection.close();

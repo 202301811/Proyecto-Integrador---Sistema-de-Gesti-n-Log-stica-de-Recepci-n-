@@ -31,6 +31,7 @@ app.use('/api/llegadas', require('./routes/llegadas'));
 app.use('/api/gateways', require('./routes/gateways'));
 app.use('/api/descargas', require('./routes/descargas'));
 app.use('/api/kpis', require('./routes/kpis'));
+app.use('/api/roles', require('./routes/roles'));
 
 // Conexión a MongoDB y arranque
 mongoose.connect(MONGODB_URI)

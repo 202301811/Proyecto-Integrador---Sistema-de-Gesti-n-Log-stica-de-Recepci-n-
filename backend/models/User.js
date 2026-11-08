@@ -23,18 +23,19 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  // Consumo dinámico de roles (RBAC) - Sprint 7
   roles: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Role',
     required: true,
   }],
-  estado: {
-    type: String,
-    enum: ['activo', 'inactivo'],
-    default: 'activo',
+  // Estandarización de Soft Delete requerida en Sprint 7
+  activo: {
+    type: Boolean,
+    default: true,
   },
 
-  // Nuevos campos para Sprint 5: MFA y Gobernanza 
+  // Campos para Sprint 5: MFA y Gobernanza 
   mfaObligatorio: { 
     type: Boolean, 
     default: false 
@@ -52,13 +53,31 @@ const UserSchema = new mongoose.Schema({
     select: false // Códigos de respaldo ocultos
   },
 
-}, { timestamps: true });
+  // Campos de Auditoría & Control - Sprint 7
+  usuarioCreacion: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User', // Referencia a la misma colección
+    default: null
+  },
+  usuarioActualizacion: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  }
+}, { 
+  // Mapeo de timestamps exigido en la rúbrica
+  timestamps: { createdAt: 'fechaCreacion', updatedAt: 'fechaActualizacion' } 
+});
 
-// Encriptación asíncrona de contraseña antes de guardar
-UserSchema.pre('save', async function () {
-  if (!this.isModified('password')) return;
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+
+UserSchema.pre('save', async function() {
+    if (!this.isModified('password')) {
+        return; 
+    }
+    const bcrypt = require('bcrypt'); // Cambia a 'bcrypt' si usas esa
+    
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
 });
 
 // Método para comparar la contraseña ingresada con el hash

@@ -1,25 +1,35 @@
 const jwt = require('jsonwebtoken');
 
-exports.verifyTempToken = (req, res, next) => {
-    // Extraer token del header Authorization: Bearer <token>
+const verifyTempToken = (req, res, next) => {
+    // 1. Extraer el token del Header de Authorization (Formato: "Bearer <token>")
     const authHeader = req.header('Authorization');
+    
     if (!authHeader) {
-        return res.status(401).json({ mensaje: 'Acceso denegado. No hay token temporal.' });
+        return res.status(401).json({ mensaje: 'No hay token temporal. Acceso denegado.' });
     }
 
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.split(' ')[1]; // Separamos "Bearer" del token real
+
+    if (!token) {
+        return res.status(401).json({ mensaje: 'Formato de token temporal inválido.' });
+    }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        // 2. Verificar y decodificar el token temporal
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'super_secreto_para_firma_jwt_2026_feen');
         
-        // Solo aceptar tokens de tipo MFA_TEMP
+        // Opcional: Validar que sea un token tipo MFA_TEMP
         if (decoded.type !== 'MFA_TEMP') {
-            return res.status(403).json({ mensaje: 'Error: El token proporcionado no es válido para esta operación (MFA).' });
+            return res.status(403).json({ mensaje: 'El token proporcionado no es válido para esta operación.' });
         }
 
-        req.usuario = decoded; // Pasamos el ID del usuario al controlador
-        next();
+        // 3. Inyectar los datos del usuario en la request (req.usuario)
+        req.usuario = decoded;
+        next(); // Pasar el control al mfaController
     } catch (error) {
+        console.error('Error al verificar TempToken:', error.message);
         return res.status(401).json({ mensaje: 'Token temporal expirado o inválido. Vuelve a iniciar sesión.' });
     }
 };
+
+module.exports = { verifyTempToken };

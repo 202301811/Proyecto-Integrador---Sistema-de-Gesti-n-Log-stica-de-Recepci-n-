@@ -1,6 +1,6 @@
 const speakeasy = require('speakeasy');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User'); // Ajusta la ruta a tu modelo
+const User = require('../models/User'); 
 
 // POST /api/mfa/setup (Protegido por verifyTempToken)
 exports.setupMfa = async (req, res) => {
@@ -35,28 +35,25 @@ exports.setupMfa = async (req, res) => {
 // POST /api/mfa/enable (Protegido por verifyTempToken)
 exports.enableMfa = async (req, res) => {
     try {
-        const { token } = req.body; // El código de 6 dígitos que el usuario tipea
+        const { token } = req.body; 
         
-        // Pedir el secret a la BD
         const usuario = await User.findById(req.usuario.id).select('+twoFactorSecret');
 
         if (!usuario || !usuario.twoFactorSecret) {
             return res.status(400).json({ mensaje: 'No hay configuración MFA pendiente.' });
         }
 
-        // Validación estricta con ventana de tolerancia de ±1 (30s)
         const esValido = speakeasy.totp.verify({
             secret: usuario.twoFactorSecret,
             encoding: 'base32',
             token: token,
-            window: 1 // RN: clock drift
+            window: 1 
         });
 
         if (!esValido) {
             return res.status(400).json({ mensaje: 'El código TOTP ingresado es incorrecto o ha expirado.' });
         }
 
-        // Activar MFA en el perfil
         usuario.twoFactorEnabled = true;
         await usuario.save();
 
@@ -69,7 +66,7 @@ exports.enableMfa = async (req, res) => {
 // POST /api/auth/mfa/verify-login (Protegido por verifyTempToken)
 exports.verifyLoginMfa = async (req, res) => {
     try {
-        const { token } = req.body; // El código de 6 dígitos
+        const { token } = req.body; 
         
         const usuario = await User.findById(req.usuario.id).select('+twoFactorSecret').populate('roles');
 
@@ -77,30 +74,53 @@ exports.verifyLoginMfa = async (req, res) => {
             return res.status(400).json({ mensaje: 'MFA no está habilitado para este usuario.' });
         }
 
-        // Verificar el TOTP
         const esValido = speakeasy.totp.verify({
             secret: usuario.twoFactorSecret,
             encoding: 'base32',
             token: token,
-            window: 1 // RN: Tolerancia de desfasaje de tiempo
+            window: 1 
         });
 
         if (!esValido) {
             return res.status(400).json({ mensaje: 'Código TOTP incorrecto.' });
         }
 
-        // Si el código es correcto, emitir el JWT Definitivo de 8 horas
+        // SPRINT 7: Extraer el nombre del rol y la lista unificada de permisos
+        let permisosSet = new Set();
+        let rolNombre = 'operador';
+
+        if (usuario.roles && usuario.roles.length > 0) {
+            // Extraemos la primera palabra en minúsculas (Ej: "Supervisor de Turno" -> "supervisor")
+            const rolOriginal = usuario.roles[0].nombreRol || usuario.roles[0].nombre || 'operador';
+            rolNombre = rolOriginal.split(' ')[0].toLowerCase();
+            
+            usuario.roles.forEach(rol => {
+                if (rol && rol.activo && rol.permisos) {
+                    rol.permisos.forEach(p => permisosSet.add(p));
+                }
+            });
+        }
+        const permisos = Array.from(permisosSet);
+
+        // SPRINT 7: Payload unificado (idéntico al de authController)
+        const payload = {
+            id: usuario._id,
+            email: usuario.email,
+            nombres: usuario.nombres,
+            rol: rolNombre,
+            permisos: permisos
+        };
+
         const tokenDefinitivo = jwt.sign(
-            { id: usuario._id, rol: usuario.roles[0].nombre, nombre: usuario.nombreCompleto },
-            process.env.JWT_SECRET,
+            payload,
+            process.env.JWT_SECRET || 'super_secreto_para_firma_jwt_2026_feen',
             { expiresIn: '8h' }
         );
 
         res.status(200).json({
             mensaje: 'Autenticación en dos pasos exitosa',
             token: tokenDefinitivo,
-            rol: usuario.roles[0].nombre,
-            usuario: { id: usuario._id, nombre: usuario.nombreCompleto }
+            usuario: payload
         });
     } catch (error) {
         res.status(500).json({ mensaje: 'Error al verificar el código MFA.' });

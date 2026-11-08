@@ -79,13 +79,20 @@ export default function MfaPage() {
 
       if (!resVerify.ok) throw new Error(dataVerify.mensaje);
 
-      // 3. Login exitoso: Limpiamos temporales, guardamos JWT final y redirigimos
+     // 3. Login exitoso: Formateamos el rol antes de guardarlo en memoria
+      const rolRaw = dataVerify.usuario?.rol || 'operador';
+      const rolFormateado = rolRaw.split(' ')[0].toLowerCase();
+      const usuarioSanitizado = { ...dataVerify.usuario, rol: rolFormateado };
+
+      // Guardamos la versión limpia en el localStorage para engañar a cualquier Layout global
       localStorage.setItem('token', dataVerify.token);
-      localStorage.setItem('usuario', JSON.stringify(dataVerify.usuario));
+      localStorage.setItem('usuario', JSON.stringify(usuarioSanitizado));
       localStorage.removeItem('tempToken');
       localStorage.removeItem('mfaStatus');
 
-      router.push(`/dashboard/${dataVerify.rol.toLowerCase()}`);
+      // Redirigimos a la ruta correcta
+      router.push(`/dashboard/${rolFormateado}`);
+      
     } catch (err) {
       setError(err.message || 'Código incorrecto o expirado.');
     }

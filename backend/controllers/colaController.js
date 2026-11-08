@@ -5,19 +5,10 @@ const { MaxHeap, calcularPrioridad } = require('../utils/ColaPrioridad')
 // GET /api/cola -> Retorna la lista ordenada en O(log n)
 exports.obtenerCola = async (req, res) => {
     try {
-        // 1. Extraemos todos los pedidos que están esperando
-        const pedidosEnCola = await Pedido.find({ estado: 'EN COLA' }).populate('proveedorId', 'nombre razonSocial');
-
-        // 2. Instanciamos el motor algorítmico (Max-Heap)
-        const heap = new MaxHeap();
+        // Traemos los pedidos con el proveedor poblado correctamente desde la BD
+        const pedidosEnCola = await Pedido.find({ estado: 'EN COLA' }).populate('proveedorId');
         
-        // 3. Insertamos cada pedido (Complejidad O(log n) por inserción)
-        pedidosEnCola.forEach(pedido => heap.insert(pedido));
-
-        // 4. Extraemos toda la cola ya ordenada matemáticamente
-        const pedidosOrdenados = heap.sort();
-
-        res.status(200).json(pedidosOrdenados);
+        res.status(200).json(pedidosEnCola);
     } catch (error) {
         console.error('Error al obtener la cola:', error);
         res.status(500).json({ mensaje: 'Error al obtener la cola de prioridad' });

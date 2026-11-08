@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const proveedorController = require('../controllers/proveedorController');
+const auth = require('../middlewares/auth'); // Importar auth
+const checkPermission = require('../middlewares/checkPermission'); // Importar checkPermission
 
 // Middleware local para revisar si express-validator encontró errores
 const validarCampos = (req, res, next) => {
@@ -13,10 +15,12 @@ const validarCampos = (req, res, next) => {
 };
 
 // GET /api/proveedores - Obtener todos los activos
-router.get('/', proveedorController.obtenerProveedores);
+router.get('/', auth, checkPermission(['proveedores']), proveedorController.obtenerProveedores);
 
 // POST /api/proveedores - Crear nuevo
 router.post('/',
+    auth, 
+    checkPermission(['proveedores']),
     [
         body('razonSocial', 'La razón social es obligatoria').notEmpty().trim(),
         body('identificacionTributaria', 'La identificación tributaria es obligatoria').notEmpty().trim(),
@@ -29,6 +33,8 @@ router.post('/',
 
 // PUT /api/proveedores/:id - Actualizar proveedor
 router.put('/:id',
+    auth, 
+    checkPermission(['proveedores']),
     [
         body('emailContacto', 'Debe ser un correo electrónico válido').optional().isEmail().normalizeEmail(),
         body('categoria', 'La categoría debe ser "construcción" o "general"').optional().isIn(['construcción', 'general']),
@@ -38,6 +44,6 @@ router.put('/:id',
 );
 
 // DELETE /api/proveedores/:id - Borrado lógico (Soft Delete)
-router.delete('/:id', proveedorController.inactivarProveedor);
+router.delete('/:id', auth, checkPermission(['proveedores']), proveedorController.inactivarProveedor);
 
 module.exports = router;

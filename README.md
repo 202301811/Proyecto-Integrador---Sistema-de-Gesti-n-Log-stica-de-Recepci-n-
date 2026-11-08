@@ -44,6 +44,13 @@ Proyecto Integrador interdisciplinar desarrollado para la Facultad de Economía,
 - **Reevaluación y Promoción Automática (RN-11):** Integración del motor algorítmico al cierre transaccional (`POST /api/descargas/finalizar`). Al liberar una bahía, la API extrae la raíz del Heap y asigna el recurso libre automáticamente al siguiente pedido elegible validando compatibilidad de carga (RN-07 / RN-08).
 - **Monitor de Cola en Next.js:** Interfaz visual interactiva que renderiza el orden estricto de la prioridad calculada por el backend. Actualiza de manera asíncrona y reactiva los repuntes de prioridad por Aging y los despachos automáticos a muelle, complementando las métricas de porcentaje operativo logístico.
 
+### Sprint 7: Gestión Dinámica de Roles (RBAC) y Manuales de Usuario
+- **Gobernanza Dinámica de Roles:** Evolución del modelo estático a un sistema RBAC plenamente gestionable mediante la interfaz de administración (`/admin/roles`), permitiendo registrar perfiles personalizados (nombre único, descripción y matriz de permisos por módulos mediante casillas de verificación).
+- **Consumo Asíncrono en Formularios:** Actualización del formulario de gestión de usuarios (`/usuarios/gestion`) para consultar de forma asíncrona el endpoint `GET /api/roles?activo=true`, enlazando dinámicamente perfiles múltiples o simples mediante identificadores `ObjectId`.
+- **Integridad Referencial en Baja Lógica:** Implementación de validaciones estrictas en el backend que bloquean la desactivación (soft delete) de cualquier rol si este se encuentra asignado activamente a uno o más usuarios vigentes, previniendo cuentas huérfanas de acceso.
+- **Middleware de Autorización `checkPermission`:** Creación de la capa de seguridad en Express.js que intercepta las peticiones HTTP, validando los tokens JWT y asegurando que el usuario posea el permiso requerido sobre el módulo correspondiente.
+- **Documentación Operativa:** Elaboración y estructuración formal de los Manuales de Usuario por Rol (Administrador, Coordinador y Operador), detallando flujos operativos paso a paso respaldados por capturas del monorepo.
+
 ---
 
 ## ⚙️ Instrucciones de Ejecución Local

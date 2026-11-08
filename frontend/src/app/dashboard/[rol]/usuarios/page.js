@@ -1,29 +1,30 @@
-"use client";
+'use client';
 import { useState, useEffect, use } from 'react';
 import { Users, Plus, Edit, Trash2, ShieldAlert, X, Save, CheckCircle } from 'lucide-react';
 
-export default function GestiónUsuariosPage({ params }) {
+export default function GestionUsuariosPage({ params }) {
   const { rol } = use(params);
   
   const [usuarios, setUsuarios] = useState([]);
+  const [rolesDisponibles, setRolesDisponibles] = useState([]); // Nuevo estado para consumir roles dinámicos
   const [cargando, setCargando] = useState(false);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [error, setError] = useState('');
-  // 1. Nuevo estado para manejar los mensajes de éxito
   const [mensajeExito, setMensajeExito] = useState(''); 
 
   const [formData, setFormData] = useState({
     nombreCompleto: '',
     email: '',
     password: '',
-    rol: 'operador',
+    rol: '', // Ahora guardará el _id del rol seleccionado
     mfaObligatorio: false
   });
 
   useEffect(() => {
     if (rol === 'administrador') {
       cargarUsuarios();
+      cargarRoles(); // Cargar la lista dinámica de roles al iniciar
     }
   }, [rol]);
 
@@ -42,6 +43,25 @@ export default function GestiónUsuariosPage({ params }) {
       console.error("Error al cargar usuarios:", error);
     } finally {
       setCargando(false);
+    }
+  };
+
+  const cargarRoles = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:4000/api/roles', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRolesDisponibles(data);
+        // Si hay roles disponibles, establecer el primero como valor por defecto
+        if (data.length > 0) {
+          setFormData(prev => ({ ...prev, rol: data[0]._id }));
+        }
+      }
+    } catch (error) {
+      console.error("Error al cargar los roles dinámicos:", error);
     }
   };
 
@@ -65,7 +85,9 @@ export default function GestiónUsuariosPage({ params }) {
       const payload = {
         ...formData,
         nombres: nombresEnviados,
-        apellidosCompleto: apellidosEnviados
+        apellidosCompleto: apellidosEnviados,
+        // El backend del Sprint 7 espera un arreglo de ObjectIds referenciados a Role
+        roles: [formData.rol] 
       };
 
       const res = await fetch(url, {
@@ -81,7 +103,6 @@ export default function GestiónUsuariosPage({ params }) {
 
       if (!res.ok) throw new Error(data.mensaje || 'Error al guardar el usuario');
 
-      // 2. Disparar el mensaje de éxito correcto según la acción
       setMensajeExito(editandoId ? 'Usuario modificado correctamente' : 'Usuario creado exitosamente');
       
       setMostrarFormulario(false);
@@ -89,7 +110,6 @@ export default function GestiónUsuariosPage({ params }) {
       resetForm();
       cargarUsuarios();
       
-      // Ocultar el mensaje después de 3 segundos
       setTimeout(() => setMensajeExito(''), 3000);
       
     } catch (err) {
@@ -103,8 +123,9 @@ export default function GestiónUsuariosPage({ params }) {
     setFormData({
       nombreCompleto: usuario.nombreCompleto || usuario.nombres || '',
       email: usuario.email || '',
-      password: '', // Se deja en blanco para que el admin escriba una nueva si lo desea
-      rol: usuario.roles && usuario.roles.length > 0 ? usuario.roles[0].nombre : 'operador',
+      password: '',
+      // Extraer el primer _id del rol asignado para preseleccionar en el dropdown
+      rol: usuario.roles && usuario.roles.length > 0 ? usuario.roles[0]._id || usuario.roles[0] : (rolesDisponibles.length > 0 ? rolesDisponibles[0]._id : ''),
       mfaObligatorio: usuario.mfaObligatorio || false
     });
     setEditandoId(usuario._id);
@@ -114,8 +135,7 @@ export default function GestiónUsuariosPage({ params }) {
   const eliminarUsuario = async (id) => {
     setError('');
     setMensajeExito('');
-    // 3. Modificamos la alerta de confirmación
-    if (!window.confirm('¿Estás seguro de eliminar este usuario del sistema?')) return;
+    if (!window.confirm('¿Estás seguro de eliminar este usuario del sistema mediante baja lógica?')) return;
     try {
       const token = localStorage.getItem('token');
       await fetch(`http://localhost:4000/api/usuarios/${id}`, {
@@ -132,7 +152,13 @@ export default function GestiónUsuariosPage({ params }) {
   };
 
   const resetForm = () => {
-    setFormData({ nombreCompleto: '', email: '', password: '', rol: 'operador', mfaObligatorio: false });
+    setFormData({ 
+      nombreCompleto: '', 
+      email: '', 
+      password: '', 
+      rol: rolesDisponibles.length > 0 ? rolesDisponibles[0]._id : '', 
+      mfaObligatorio: false 
+    });
     setEditandoId(null);
   };
 
@@ -160,7 +186,6 @@ export default function GestiónUsuariosPage({ params }) {
         )}
       </div>
 
-      {/* Renderizado de las alertas rojas y verdes */}
       {error && <div className="alert alert-danger">{error}</div>}
       {mensajeExito && (
         <div className="alert alert-success d-flex align-items-center">
@@ -192,7 +217,6 @@ export default function GestiónUsuariosPage({ params }) {
                   <label className="form-label fw-semibold">
                     Contraseña {editandoId && <span className="text-muted small fw-normal">(Dejar en blanco para no cambiar)</span>}
                   </label>
-                  {/* 4. El required solo aplica si NO estamos editando (editandoId es null) */}
                   <input 
                     type="password" 
                     className="form-control" 
@@ -202,11 +226,21 @@ export default function GestiónUsuariosPage({ params }) {
                   />
                 </div>
                 <div className="col-md-6">
-                  <label className="form-label fw-semibold">Rol del Sistema</label>
-                  <select className="form-select" value={formData.rol} onChange={(e) => setFormData({...formData, rol: e.target.value})}>
-                    <option value="operador">Operador</option>
-                    <option value="coordinador">Coordinador Logístico</option>
-                    <option value="administrador">Administrador</option>
+                  <label className="form-label fw-semibold">Rol Dinámico (Catálogo)</label>
+                  <select 
+                    className="form-select" 
+                    value={formData.rol} 
+                    onChange={(e) => setFormData({...formData, rol: e.target.value})}
+                    required
+                  >
+                    {rolesDisponibles.map(rolDb => (
+                      <option key={rolDb._id} value={rolDb._id}>
+                        {rolDb.nombreRol}
+                      </option>
+                    ))}
+                    {rolesDisponibles.length === 0 && (
+                      <option value="" disabled>No hay roles activos en el sistema</option>
+                    )}
                   </select>
                 </div>
                 
@@ -233,7 +267,7 @@ export default function GestiónUsuariosPage({ params }) {
               </div>
               
               <div className="d-flex justify-content-end mt-4">
-                <button type="submit" className="btn btn-primary d-flex align-items-center">
+                <button type="submit" className="btn btn-primary d-flex align-items-center" disabled={rolesDisponibles.length === 0}>
                   <Save size={20} className="me-2" /> {editandoId ? 'Guardar Cambios' : 'Guardar Usuario'}
                 </button>
               </div>
@@ -265,7 +299,13 @@ export default function GestiónUsuariosPage({ params }) {
                         <tr key={user._id}>
                           <td className="px-4 fw-medium">{user.nombreCompleto || user.nombres}</td>
                           <td>{user.email}</td>
-                          <td><span className="badge bg-secondary text-uppercase">{user.roles && user.roles[0]?.nombre}</span></td>
+                          <td>
+                            <span className="badge bg-secondary text-uppercase">
+                              {user.roles && user.roles.length > 0 && typeof user.roles[0] === 'object' 
+                                ? user.roles[0].nombreRol 
+                                : 'Rol no asignado'}
+                            </span>
+                          </td>
                           <td className="text-center">
                             {user.mfaObligatorio ? (
                               <span className="badge bg-success bg-opacity-10 text-success border border-success">Obligatorio</span>

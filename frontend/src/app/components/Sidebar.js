@@ -2,11 +2,12 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Home, Truck, Calendar, Settings, Clock, LogOut, BarChart3, Users, Package, ListOrdered } from 'lucide-react';
+import { Menu, X, Home, Truck, Calendar, Settings, Clock, LogOut, BarChart3, Users, ListOrdered, Shield } from 'lucide-react';
 
 export default function Sidebar({ rol, onLogout }) {
   const [expandido, setExpandido] = useState(true);
   const [esMovil, setEsMovil] = useState(false);
+  const [permisos, setPermisos] = useState([]); // Nuevo estado para los permisos (Sprint 7)
   const pathname = usePathname();
 
   useEffect(() => {
@@ -25,18 +26,42 @@ export default function Sidebar({ rol, onLogout }) {
     if (esMovil) setExpandido(false);
   }, [pathname, esMovil]);
 
+  // NUEVO: Efecto para decodificar el token y extraer los permisos
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const payloadBase64 = token.split('.')[1];
+        const decodedJson = JSON.parse(atob(payloadBase64));
+        // Guardamos los permisos extraídos del token en el estado
+        setPermisos(decodedJson.permisos || []);
+      } catch (error) {
+        console.error("Error al decodificar token en Sidebar", error);
+      }
+    }
+  }, []);
+
+  // Función validadora: Retorna true si el usuario tiene al menos uno de los permisos requeridos
+  const tienePermiso = (permisosRequeridos) => {
+    if (permisosRequeridos.length === 0) return true; // Links públicos como "Inicio"
+    return permisosRequeridos.some(modulo => permisos.includes(modulo));
+  };
+
+  // SPRINT 7: Reemplazamos la validación estática de 'roles' por 'permisosRequeridos' (Módulos de la BD)
   const enlaces = [
-    { href: `/dashboard/${rol}`, label: 'Inicio', icono: <Home size={20} />, roles: ['coordinador', 'operador', 'administrador'] },
-    { href: `/dashboard/${rol}/proveedores`, label: 'Proveedores', icono: <Truck size={20} />, roles: ['coordinador'] },
-    { href: `/dashboard/${rol}/pedidos`, label: 'Programar Citas', icono: <Calendar size={20} />, roles: ['coordinador'] },
-    { href: `/dashboard/${rol}/parametros`, label: 'Parámetros', icono: <Settings size={20} />, roles: ['coordinador'] },
-    { href: `/dashboard/${rol}/arribos`, label: 'Control Caseta', icono: <Clock size={20} />, roles: ['coordinador', 'operador'] },
-    { href: `/dashboard/${rol}/kpis`, label: 'Indicadores (KPIs)', icono: <BarChart3 size={20} />, roles: ['coordinador', 'administrador'] },
-    { href: `/dashboard/${rol}/usuarios`, label: 'Usuarios', icono: <Users size={20} />, roles: ['administrador'] },
-    { href: `/cola`, label: 'Monitor de Cola', icono: <ListOrdered size={20} />, roles: ['coordinador', 'administrador'] },
+    { href: `/dashboard/${rol}`, label: 'Inicio', icono: <Home size={20} />, permisosRequeridos: [] },
+    { href: `/dashboard/${rol}/proveedores`, label: 'Proveedores', icono: <Truck size={20} />, permisosRequeridos: ['proveedores'] },
+    { href: `/dashboard/${rol}/pedidos`, label: 'Programar Citas', icono: <Calendar size={20} />, permisosRequeridos: ['pedidos'] },
+    { href: `/dashboard/${rol}/parametros`, label: 'Parámetros', icono: <Settings size={20} />, permisosRequeridos: ['kpis', 'roles', 'usuarios'] }, // Flexible para coordinadores/admins
+    { href: `/dashboard/${rol}/arribos`, label: 'Control Caseta', icono: <Clock size={20} />, permisosRequeridos: ['descargas', 'gateways'] },
+    { href: `/dashboard/${rol}/kpis`, label: 'Indicadores (KPIs)', icono: <BarChart3 size={20} />, permisosRequeridos: ['kpis'] },
+    { href: `/dashboard/${rol}/usuarios`, label: 'Usuarios', icono: <Users size={20} />, permisosRequeridos: ['usuarios'] },
+    { href: `/dashboard/${rol}/roles`, label: 'Catálogo de Roles', icono: <Shield size={20} />, permisosRequeridos: ['roles'] }, // La nueva pantalla del Sprint 7
+    { href: `/cola`, label: 'Monitor de Cola', icono: <ListOrdered size={20} />, permisosRequeridos: ['cola'] },
   ];
 
-  const enlacesPermitidos = enlaces.filter(enlace => enlace.roles.includes(rol));
+  // Filtramos los enlaces dinámicamente según los permisos del JWT
+  const enlacesPermitidos = enlaces.filter(enlace => tienePermiso(enlace.permisosRequeridos));
 
   return (
     <>
@@ -64,7 +89,6 @@ export default function Sidebar({ rol, onLogout }) {
         style={{ 
           width: esMovil ? '260px' : (expandido ? '260px' : '80px'), 
           height: '100vh', 
-          
           position: esMovil ? 'fixed' : 'sticky',
           top: 0,
           left: esMovil && !expandido ? '-260px' : '0',

@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const pedidoController = require('../controllers/pedidoController');
+const auth = require('../middlewares/auth'); 
+const checkPermission = require('../middlewares/checkPermission');
 
 const validarCampos = (req, res, next) => {
     const errores = validationResult(req);
@@ -12,10 +14,12 @@ const validarCampos = (req, res, next) => {
 };
 
 // GET /api/pedidos - Obtener todos los activos
-router.get('/', pedidoController.obtenerPedidos);
+router.get('/', auth, checkPermission(['pedidos']), pedidoController.obtenerPedidos);
 
 // POST /api/pedidos - Crear nueva cita
 router.post('/',
+    auth,
+    checkPermission(['pedidos']),
     [
         body('proveedorId', 'Debe ser un ID válido de MongoDB').isMongoId(),
         body('tipoProducto', 'El tipo de producto debe ser "construcción" o "general"').isIn(['construcción', 'general']),
@@ -28,6 +32,8 @@ router.post('/',
 
 // PUT /api/pedidos/:id - Reprogramar cita
 router.put('/:id',
+    auth,
+    checkPermission(['pedidos']),
     [
         body('fechaHoraProgramada', 'La fecha y hora programada es obligatoria (formato ISO8601)').optional().isISO8601(),
         validarCampos
@@ -36,6 +42,6 @@ router.put('/:id',
 );
 
 // DELETE /api/pedidos/:id - Cancelar cita (Soft Delete)
-router.delete('/:id', pedidoController.cancelarPedido);
+router.delete('/:id', auth, checkPermission(['pedidos']), pedidoController.cancelarPedido);
 
 module.exports = router;

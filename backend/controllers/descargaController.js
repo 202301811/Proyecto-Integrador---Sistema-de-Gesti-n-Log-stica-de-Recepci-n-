@@ -1,6 +1,8 @@
 const Descarga = require('../models/Descarga');
 const Gateway = require('../models/Gateway');
 const Pedido = require('../models/Pedido');
+const Evento = require('../models/Evento'); 
+const { MaxHeap } = require('../utils/ColaPrioridad'); 
 const { registrarEvento } = require('../utils/auditoria');
 
 // POST: Iniciar Descarga (Aplica RN-07 y RN-08)
@@ -44,12 +46,12 @@ exports.iniciarDescarga = async (req, res) => {
         await pedido.save();
 
         // AUDITORÍA RN-14: Registro de inicio
-            await registrarEvento(usuarioId, nombreUsuario, 'GATEWAY_ASIGNADO', pedidoId, { 
-                gatewayAsignado: gateway.numeroGateway 
-            });
-            await registrarEvento(usuarioId, nombreUsuario, 'DESCARGADA_INICIADA', pedidoId, { 
-                tipoCarga: pedido.tipoProducto 
-            });
+        await registrarEvento(usuarioId, nombreUsuario, 'GATEWAY_ASIGNADO', pedidoId, { 
+            gatewayAsignado: gateway.numeroGateway 
+        });
+        await registrarEvento(usuarioId, nombreUsuario, 'DESCARGADA_INICIADA', pedidoId, { 
+            tipoCarga: pedido.tipoProducto 
+        });
 
         res.status(201).json({ mensaje: 'Descarga iniciada con éxito', descarga: nuevaDescarga });
     } catch (error) {
@@ -61,8 +63,14 @@ exports.iniciarDescarga = async (req, res) => {
 exports.finalizarDescarga = async (req, res) => {
     try {
         const { descargaId, gatewayId } = req.body;
-        const usuarioId = req.usuario?.id; 
+        const usuarioId = req.usuario?.id || req.usuario?._id; 
         const nombreUsuario = req.usuario?.nombre || 'Operador de Descarga';
+
+        // Modelos externos requeridos (asegúrate de que estén importados arriba en tu archivo)
+        const Pedido = require('../models/Pedido');
+        const Gateway = require('../models/Gateway');
+        const { MaxHeap } = require('../utils/ColaPrioridad');
+        const { registrarEvento } = require('../utils/auditoria');
 
         let descarga;
         if (descargaId) descarga = await Descarga.findById(descargaId);
@@ -71,57 +79,87 @@ exports.finalizarDescarga = async (req, res) => {
         if (!descarga) return res.status(404).json({ mensaje: 'No hay una descarga activa en este Gateway.' });
         if (descarga.fechaHoraFin) return res.status(400).json({ mensaje: 'Esta descarga ya fue finalizada.' });
 
-        // 1. Captura Temporal y Cálculo de Duración
+        // 1. Finalizar la descarga actual
         const fechaFin = new Date();
-        const duracionMs = fechaFin.getTime() - descarga.fechaHoraInicio.getTime();
-        const duracionMinutos = Math.round(duracionMs / 60000);
-
         descarga.fechaHoraFin = fechaFin;
-        descarga.duracionMinutos = duracionMinutos;
+        descarga.duracionMinutos = Math.round((fechaFin.getTime() - descarga.fechaHoraInicio.getTime()) / 60000);
         descarga.usuarioActualizacion = nombreUsuario;
+        await descarga.save();
 
-        // 2. Transición de Estados (Atomicidad: Guardamos en orden estricto)
-        await descarga.save(); // Primero registramos el fin en la descarga
+        // 2. Actualizar el pedido anterior a FINALIZADO
+        await Pedido.findByIdAndUpdate(descarga.pedidoId, { 
+            estado: 'FINALIZADO', 
+            usuarioActualizacion: nombreUsuario 
+        });
 
-        const pedido = await Pedido.findById(descarga.pedidoId);
-        if (pedido) {
-            pedido.estado = 'FINALIZADO';
-            pedido.usuarioActualizacion = nombreUsuario;
-            await pedido.save(); // Segundo el pedido
-        }
+        // ---------------------------------------------------------------------------
+        // 3. SPRINT 6 - RN-11: PROMOCIÓN AUTOMÁTICA CON MAX-HEAP
+        // ---------------------------------------------------------------------------
+        const gatewayActual = await Gateway.findById(descarga.gatewayId || gatewayId);
+        const tipoCargaGateway = gatewayActual.tipoCargaPermitida.toUpperCase();
 
-        const gateway = await Gateway.findById(descarga.gatewayId);
-        if (gateway) {
-            gateway.estado = 'LIBRE';
-            gateway.usuarioActualizacion = nombreUsuario;
-            await gateway.save(); // Tercero liberamos la bahía
-        }
+        // Extraer de la base de datos SOLO los pedidos compatibles con la exclusividad del Gateway
+        const pedidosCompatibles = await Pedido.find({ 
+            estado: 'EN COLA', 
+            tipoProducto: tipoCargaGateway,
+            activo: true
+        });
 
-        // 3. AUDITORÍA RN-14: Registro de fin
-            await registrarEvento(usuarioId, nombreUsuario, 'DESCARGA_FINALIZADA', pedido._id, {
-                gatewayLiberado: gateway?.numeroGateway,
-                duracionMinutos: duracionMinutos
+        if (pedidosCompatibles.length > 0) {
+            // Instanciar motor algorítmico
+            const heap = new MaxHeap();
+            pedidosCompatibles.forEach(pedido => heap.insert(pedido));
+            
+            // Extraer la raíz del heap (O(1) para el máximo de prioridad)
+            const colaOrdenada = heap.sort();
+            const pedidoPromovido = colaOrdenada[0];
+
+            // Promover vehículo
+            pedidoPromovido.estado = 'DESCARGANDO';
+            pedidoPromovido.usuarioActualizacion = nombreUsuario;
+            await pedidoPromovido.save();
+
+            // Crear la nueva transacción para el camión inyectado automáticamente
+            const nuevaDescarga = new Descarga({
+                gatewayId: gatewayActual._id,
+                pedidoId: pedidoPromovido._id,
+                operadorId: usuarioId,
+                fechaHoraInicio: new Date(),
+                usuarioCreacion: nombreUsuario,
+                usuarioActualizacion: nombreUsuario
+            });
+            await nuevaDescarga.save();
+
+            // Auditoría inmutable (RN-14)
+            await registrarEvento(usuarioId, nombreUsuario, 'PROMOCION_AUTOMATICA_GATEWAY', pedidoPromovido._id, {
+                numeroPedido: pedidoPromovido.numeroPedido,
+                gatewayAsignado: gatewayActual.numeroGateway,
+                prioridad: pedidoPromovido.prioridadCalculada,
+                tiempoEnCola: pedidoPromovido.minutosEnEspera
             });
 
-        // 4. Reevaluación de Cola (Verificar si hay vehículos esperando compatibles)
-        const siguienteEnCola = await Pedido.findOne({ 
-            estado: 'EN COLA', 
-            tipoProducto: gateway?.tipoCargaPermitida,
-            activo: true
-        }).sort({ fechaHoraLlegadaReal: 1 }); // El que llegó primero
+            // Respuesta cuando inyecta un camión nuevo
+            return res.status(200).json({ 
+                mensaje: 'Descarga finalizada. El algoritmo inyectó automáticamente el camión (RN-11).', 
+                descarga: descarga, 
+                duracionMinutos: descarga.duracionMinutos, 
+                nuevoAsignado: pedidoPromovido
+            });
 
-        let mensajeCola = 'No hay vehículos en cola.';
-        if (siguienteEnCola) {
-            mensajeCola = `El vehículo ${siguienteEnCola.numeroPedido} está en cola y es compatible con el Gateway ${gateway?.numeroGateway}.`;
+        } else {
+            // Si la cola está vacía para ese tipo de carga, el Gateway queda libre
+            gatewayActual.estado = 'LIBRE';
+            gatewayActual.usuarioActualizacion = nombreUsuario;
+            await gatewayActual.save();
+
+            // Respuesta cuando se queda vacío
+            return res.status(200).json({ 
+                mensaje: 'Descarga finalizada. Gateway libre (no hay camiones compatibles en espera).', 
+                descarga: descarga,
+                duracionMinutos: descarga.duracionMinutos
+            });
         }
-
-        res.status(200).json({ 
-            mensaje: 'Descarga finalizada y Gateway liberado', 
-            duracionMinutos,
-            mensajeCola,
-            descarga 
-        });
     } catch (error) {
-        res.status(500).json({ mensaje: 'Error al finalizar la descarga', error: error.message });
+        return res.status(500).json({ mensaje: 'Error al finalizar descarga', error: error.message });
     }
 };

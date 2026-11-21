@@ -1,0 +1,207 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-feen-sumacontrol01",
+    "name": "SumaControl - API Logística FEEN",
+    "description": "Colección completa de endpoints para el Sistema de Gestión Logística de Recepción y Control de Bahías.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000/api", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "tempToken", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "01. Autenticación y MFA",
+      "item": [
+        {
+          "name": "Login (Paso 1)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@feen.ujmd.edu.sv\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "MFA - Generar Setup QR (Paso 2a)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tempToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/mfa/setup", "host": ["{{baseUrl}}"], "path": ["mfa", "setup"] }
+          }
+        },
+        {
+          "name": "MFA - Verificar Código TOTP (Paso 2b)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tempToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"123456\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/mfa/verify-login", "host": ["{{baseUrl}}"], "path": ["auth", "mfa", "verify-login"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Proveedores",
+      "item": [
+        {
+          "name": "Listar Proveedores Activos",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/proveedores", "host": ["{{baseUrl}}"], "path": ["proveedores"] }
+          }
+        },
+        {
+          "name": "Registrar Proveedor",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razonSocial\": \"Transportes del Pacífico S.A.\",\n  \"identificacionTributaria\": \"0614-120590-101-3\",\n  \"categoria\": \"general\",\n  \"contactoNombre\": \"Carlos Morales\",\n  \"telefono\": \"+503 2222-3333\",\n  \"emailContacto\": \"contacto@pacificotrans.sv\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/proveedores", "host": ["{{baseUrl}}"], "path": ["proveedores"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Pedidos y Citas",
+      "item": [
+        {
+          "name": "Listar Pedidos",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/pedidos", "host": ["{{baseUrl}}"], "path": ["pedidos"] }
+          }
+        },
+        {
+          "name": "Programar Pedido (Autogenerado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proveedorId\": \"COLOCAR_OBJECTID_AQUI\",\n  \"tipoProducto\": \"general\",\n  \"fechaHoraProgramada\": \"2026-11-21T09:00:00.000Z\",\n  \"duracionEstimadaMinutos\": 60\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/pedidos", "host": ["{{baseUrl}}"], "path": ["pedidos"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Caseta y Arribos (HU-02)",
+      "item": [
+        {
+          "name": "Registrar Arribo en Caseta",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroPedido\": \"PED-EQUI03-000000001\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/llegadas", "host": ["{{baseUrl}}"], "path": ["llegadas"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Gateways y Descargas (HU-03)",
+      "item": [
+        {
+          "name": "Listar Gateways",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/gateways", "host": ["{{baseUrl}}"], "path": ["gateways"] }
+          }
+        },
+        {
+          "name": "Iniciar Descarga en Bahía",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gatewayId\": \"COLOCAR_ID_GATEWAY\",\n  \"pedidoId\": \"COLOCAR_ID_PEDIDO\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/descargas/iniciar", "host": ["{{baseUrl}}"], "path": ["descargas", "iniciar"] }
+          }
+        },
+        {
+          "name": "Finalizar Descarga y Liberar Bahía",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gatewayId\": \"COLOCAR_ID_GATEWAY\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/descargas/finalizar", "host": ["{{baseUrl}}"], "path": ["descargas", "finalizar"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Motor de Cola de Prioridad y Aging (Sprint 6)",
+      "item": [
+        {
+          "name": "Consultar Cola Ordenada (Max-Heap)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/cola", "host": ["{{baseUrl}}"], "path": ["cola"] }
+          }
+        },
+        {
+          "name": "Forzar Recálculo de Aging (Anti-Starvation)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/cola/reevaluar", "host": ["{{baseUrl}}"], "path": ["cola", "reevaluar"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Analítica y KPIs",
+      "item": [
+        {
+          "name": "Obtener Dashboard de KPIs Logísticos",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/kpis", "host": ["{{baseUrl}}"], "path": ["kpis"] }
+          }
+        }
+      ]
+    }
+  ]
+}
